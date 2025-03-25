@@ -1,0 +1,28 @@
+# Ignorer les fichiers de configuration et de build de Visual Studio
+.vs/
+*.suo
+*.user
+*.userosscache
+*.sln.docstates
+
+# Ignorer les dossiers de build .NET
+[Bb]in/
+[Oo]bj/
+
+# Ignorer les fichiers de configuration et de cache de NuGet
+*.nupkg
+*.snupkg
+project.assets.json
+project.nuget.cache
+*.csproj.nuget.dgspec.json
+*.csproj.nuget.g.props
+
+# Ignorer les fichiers temporaires de l'éditeur
+*.cache
+*.log
+*.pdb
+
+# Ignorer les fichiers de sauvegarde et temporaires courants
+*.tmp
+*.bak
+*~
