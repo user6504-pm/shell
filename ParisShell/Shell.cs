@@ -13,6 +13,7 @@ namespace ParisShell {
             commands["update"] = args => SimulateUpdate();
             commands["help"] = args => Help();
             commands["connect"] = args => new ConnectCommand().Execute(args);
+            commands["disconnect"] = args => new DisconnectCommand().Execute(args);
         }
 
         public void Run() {
