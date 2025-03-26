@@ -8,6 +8,7 @@ using Org.BouncyCastle.Bcpg;
 namespace ParisShell.Services {
     internal class SqlService {
         private MySqlConnection? _connection;
+        public MySqlConnection GetConnection() => _connection;
 
         public bool Connect(SqlConnectionConfig config) {
             if (!config.IsValid()) {

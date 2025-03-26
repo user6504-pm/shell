@@ -3,18 +3,17 @@ using ParisShell.Services;
 
 namespace ParisShell.Commands {
     internal class DisconnectCommand : ICommand {
+
+        private readonly SqlService _sqlService;
+
         public string Name => "disconnect";
 
-        public void Execute(string[] args) {
-            var sqlService = new SqlService();
+        public DisconnectCommand(SqlService sqlService) {
+            _sqlService = sqlService;
+        }
 
-            if (sqlService.IsConnected) {
-                sqlService.Disconnect();
-                AnsiConsole.MarkupLine("[green]✅ Déconnexion réussie de la base de données.[/]");
-            }
-            else {
-                AnsiConsole.MarkupLine("[yellow]⚠️ Aucune connexion active à déconnecter.[/]");
-            }
+        public void Execute(string[] args) {
+            _sqlService.Disconnect();
         }
     }
 }

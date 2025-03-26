@@ -6,7 +6,14 @@ using System.Collections.Generic;
 
 namespace ParisShell.Commands {
     internal class ConnectCommand : ICommand {
+
+        private readonly SqlService _sqlService;
+
         public string Name => "connect";
+
+        public ConnectCommand(SqlService sqlService) {
+            _sqlService = sqlService;
+        }
 
         public void Execute(string[] args) {
             var arguments = ParseArguments(args);
@@ -19,11 +26,10 @@ namespace ParisShell.Commands {
             string user = arguments["user"];
             string password = arguments["password"];
             string host = arguments.ContainsKey("host") ? arguments["host"] : "localhost"; // Valeur par défaut pour l'hôte
-            string database = arguments.ContainsKey("db") ? arguments["db"] : "mysql"; // Valeur par défaut pour la base de données
+            string database = arguments.ContainsKey("db") ? arguments["db"] : "Livininparis_219"; 
             string port = arguments.ContainsKey("port") ? arguments["port"] : "3306"; // Valeur par défaut pour le port
 
             // Utiliser SqlService pour la connexion
-            var sqlService = new SqlService();
             var config = new SqlConnectionConfig {
                 SERVER = host,
                 PORT = port, // Correctement attribuer le port
@@ -32,7 +38,7 @@ namespace ParisShell.Commands {
                 PASSWORD = password
             };
 
-            sqlService.Connect(config);
+            _sqlService.Connect(config);
         }
 
         // Méthode pour analyser les arguments de la commande

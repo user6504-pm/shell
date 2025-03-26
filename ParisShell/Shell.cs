@@ -1,4 +1,5 @@
 ﻿using ParisShell.Commands;
+using ParisShell.Services;
 using Spectre.Console;
 using System;
 using System.Collections.Generic;
@@ -6,14 +7,18 @@ using System.Collections.Generic;
 namespace ParisShell {
     internal class Shell {
         private readonly Dictionary<string, Action<string[]>> commands = new();
+        private readonly SqlService _sqlService = new SqlService();
+        private readonly Session _session = new();
 
         public Shell() {
-            commands["pwd"] = args => Pwd();
-            commands["echo"] = args => Echo(args);
-            commands["update"] = args => SimulateUpdate();
-            commands["help"] = args => Help();
-            commands["connect"] = args => new ConnectCommand().Execute(args);
-            commands["disconnect"] = args => new DisconnectCommand().Execute(args);
+            commands["clear"] = args => new ClearCommand().Execute(args);
+            commands["connect"] = args => new ConnectCommand(_sqlService).Execute(args);
+            commands["disconnect"] = args => new DisconnectCommand(_sqlService).Execute(args);
+            commands["showtable"] = args => new ShowTableCommand(_sqlService).Execute(args);
+            commands["showtables"] = args => new ShowTablesCommand(_sqlService).Execute(args);
+            commands["cinf"] = args => new CInfCommand(_sqlService).Execute(args);
+            commands["login"] = args => new LoginCommand(_sqlService, _session).Execute(args);
+            commands["initdb"] = args => new InitDbCommand().Execute(args);
         }
 
         public void Run() {
@@ -21,6 +26,9 @@ namespace ParisShell {
             while (true) {
 
                 var promptText = $"[white]user[/][deeppink4_2]@paris[/][maroon]:{Statusus()}[/][white]#[/] ";
+                string userDisplay = _session.CurrentUser != null
+                                    ? $"[white]{_session.CurrentUser.Nom}[/][deeppink4_2]@paris[/][maroon]"
+                                    : $"[white]user[/][deeppink4_2]@paris[/][maroon]:{Statusus()}[/][white]#[/] ";
 
                 var input = AnsiConsole.Prompt(
                     new TextPrompt<string>(promptText)
@@ -53,39 +61,6 @@ namespace ParisShell {
                     PrintError($"Commande inconnue : '{name}'");
                 }
             }
-        }
-
-        private void Pwd() {
-            AnsiConsole.MarkupLine($"[blue]{Environment.CurrentDirectory}[/]");
-        }
-
-        private void Echo(string[] args) {
-            var text = string.Join(" ", args);
-            AnsiConsole.MarkupLine(text);
-        }
-
-        private void SimulateUpdate() {
-            AnsiConsole.MarkupLine("[white]Password for user:[/]");
-            AnsiConsole.MarkupLine("[olive]Hit:1[/] [white]http://archive.ubuntu.com/ubuntu jammy InRelease[/]");
-            AnsiConsole.MarkupLine("[olive]Hit:2[/] [white]http://security.ubuntu.com/ubuntu jammy-security InRelease[/]");
-            AnsiConsole.MarkupLine("[olive]Hit:3[/] [white]http://archive.ubuntu.com/ubuntu jammy-updates InRelease[/]");
-
-            AnsiConsole.Write(new Markup("[green]0%[/] [bold yellow]Working[/]\n"));
-            AnsiConsole.Status()
-                .Spinner(Spinner.Known.Dots)
-                .Start("Updating package lists...", ctx => {
-                    System.Threading.Thread.Sleep(2000);
-                });
-
-            AnsiConsole.MarkupLine("[green]Done.[/]");
-        }
-
-        private void Help() {
-            AnsiConsole.MarkupLine("[bold]Commandes disponibles :[/]");
-            AnsiConsole.MarkupLine("[blue]pwd[/]        - Affiche le répertoire courant");
-            AnsiConsole.MarkupLine("[blue]echo[/]       - Affiche du texte");
-            AnsiConsole.MarkupLine("[blue]update[/]     - Simule une mise à jour apt");
-            AnsiConsole.MarkupLine("[blue]exit[/]       - Quitte le shell");
         }
 
         private void PrintError(string message) {

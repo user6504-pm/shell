@@ -2,7 +2,7 @@
     internal class SqlConnectionConfig {
         public string SERVER { get; set; } = "localhost";
         public string PORT { get; set; } = "3306";
-        public string DATABASE { get; set; } = "sys";
+        public string DATABASE { get; set; } = "Livinparis_219";
         public string UID { get; set; } = "root";
         public string PASSWORD { get; set; } = "root";
 
