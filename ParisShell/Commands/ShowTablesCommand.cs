@@ -5,11 +5,13 @@ using MySql.Data.MySqlClient;
 namespace ParisShell.Commands {
     internal class ShowTablesCommand : ICommand {
         private readonly SqlService _sqlService;
+        private readonly Services.Session _session;
 
         public string Name => "showtables";
 
-        public ShowTablesCommand(SqlService sqlService) {
+        public ShowTablesCommand(SqlService sqlService, Session session) {
             _sqlService = sqlService;
+            _session = session;
         }
 
         public void Execute(string[] args) {
@@ -19,10 +21,13 @@ namespace ParisShell.Commands {
                 return;
             }
 
-            // Récupérer toutes les tables
-            DisplayAllTables();
-        }
+            if (_session.IsInRole("BOZO"))
+                DisplayAllTables();
+            else 
+                DisplayRoleTables();
 
+        }
+            
         private void DisplayAllTables() {
             try {
                 string query = $"SHOW TABLES"; // Requête pour récupérer toutes les tables
@@ -51,6 +56,44 @@ namespace ParisShell.Commands {
             catch (Exception ex) {
                 AnsiConsole.MarkupLine($"[red]⛔ Erreur lors de la récupération des tables : {ex.Message}[/]");
             }
+        }
+        private void DisplayRoleTables() {
+            var userRoles = _session.CurrentUser?.Roles ?? new List<string>();
+            var visibleTables = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+
+            // Définir les droits par rôle
+            var roleTables = new Dictionary<string, List<string>>(StringComparer.OrdinalIgnoreCase) {
+                ["CUISINIER"] = new List<string> { "plats", "evaluations" },
+                ["CLIENT"] = new List<string> { "evaluations", "plats" },
+                ["ADMIN"] = new List<string> {
+            "users", "roles", "user_roles", "plats", "commandes", "evaluations", "clients",
+            "cuisiniers", "stations_metro", "connexions_metro"
+        }
+                // Ajoute d'autres rôles ici si nécessaire
+            };
+
+            // Collecter les tables autorisées pour tous les rôles de l'utilisateur
+            foreach (var role in userRoles) {
+                if (roleTables.TryGetValue(role, out var tables)) {
+                    foreach (var table in tables)
+                        visibleTables.Add(table);
+                }
+            }
+
+            if (visibleTables.Count == 0) {
+                AnsiConsole.MarkupLine("[yellow]⚠️ Aucun accès à des tables pour vos rôles actuels.[/]");
+                return;
+            }
+
+            // Afficher les tables visibles
+            var spectreTable = new Table().Border(TableBorder.Rounded).Expand();
+            spectreTable.AddColumn("[bold]Tables accessibles[/]");
+
+            foreach (var tableName in visibleTables.OrderBy(x => x)) {
+                spectreTable.AddRow(tableName);
+            }
+
+            AnsiConsole.Write(spectreTable);
         }
     }
 }

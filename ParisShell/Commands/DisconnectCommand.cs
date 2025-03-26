@@ -13,7 +13,11 @@ namespace ParisShell.Commands {
         }
 
         public void Execute(string[] args) {
-            _sqlService.Disconnect();
+            if (!_sqlService.IsConnected) {
+                AnsiConsole.MarkupLine("Not connected : nothing to disconnect from");
+            }
+
+                _sqlService.Disconnect();
         }
     }
 }

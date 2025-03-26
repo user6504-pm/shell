@@ -3,21 +3,30 @@ using ParisShell.Services;
 using MySql.Data.MySqlClient;
 using System;
 using System.Text.RegularExpressions;
+using MySqlX.XDevAPI;
 
 namespace ParisShell.Commands {
     internal class CInfCommand : ICommand  // Renommé la classe en CinfCommand
     {
         private readonly SqlService _sqlService;
+        private readonly Services.Session _session;
 
         public string Name => "cinf";  // Renommé la commande en "cinf"
 
-        public CInfCommand(SqlService sqlService) {
+        public CInfCommand(SqlService sqlService, Services.Session session) {
             _sqlService = sqlService;
+            _session = session;
         }
 
         public void Execute(string[] args) {
+
             if (!_sqlService.IsConnected) {
                 AnsiConsole.MarkupLine("[red]⛔ Vous n'êtes pas connecté à une base de données.[/]");
+                return;
+            }
+
+            if (!_session.IsInRole("BOZO")) {
+                AnsiConsole.MarkupLine("Permission denied, only bozo can");
                 return;
             }
 

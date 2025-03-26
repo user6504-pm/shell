@@ -16,6 +16,12 @@ namespace ParisShell.Commands {
         }
 
         public void Execute(string[] args) {
+
+            if (_sqlService.IsConnected) {
+                AnsiConsole.MarkupLine("Already connected");
+                return;
+            }
+
             var arguments = ParseArguments(args);
 
             if (!arguments.ContainsKey("user") || !arguments.ContainsKey("password")) {

@@ -9,6 +9,7 @@ namespace ParisShell.Services {
     internal class SqlService {
         private MySqlConnection? _connection;
         public MySqlConnection GetConnection() => _connection;
+        public bool IsConnected => _connection?.State == ConnectionState.Open;
 
         public bool Connect(SqlConnectionConfig config) {
             if (!config.IsValid()) {
@@ -40,7 +41,6 @@ namespace ParisShell.Services {
             }
         }
 
-        public bool IsConnected => _connection?.State == ConnectionState.Open;
 
         public void ExecuteAndDisplay(string sql) {
             if (!IsConnected) {
