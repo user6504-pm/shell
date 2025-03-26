@@ -14,13 +14,13 @@ namespace ParisShell.Commands {
         }
 
         public void Execute(string[] args) {
-            if (!_session.IsAuthenticated || !_session.IsInRole("cuisinier")) {
-                AnsiConsole.MarkupLine("[red]⛔ Accès réservé aux cuisiniers.[/]");
+            if (!_session.IsAuthenticated || !_session.IsInRole("CUISINIER")) {
+                Shell.PrintError("Access restricted to cuisiniers only.");
                 return;
             }
 
             if (args.Length == 0) {
-                AnsiConsole.MarkupLine("[yellow]Utilisation : cuisinier [clients|stats|platdujour][/]");
+                Shell.PrintWarning("Usage: cuisinier [clients|stats|platdujour|ventes]");
                 return;
             }
 
@@ -38,7 +38,7 @@ namespace ParisShell.Commands {
                     ShowTotalVentesParPlat();
                     break;
                 default:
-                    AnsiConsole.MarkupLine("[red]⛔ Sous-commande inconnue.[/]");
+                    Shell.PrintError("Unknown subcommand.");
                     break;
             }
         }
@@ -46,14 +46,14 @@ namespace ParisShell.Commands {
         private void ShowClients() {
             var filter = AnsiConsole.Prompt(
                 new SelectionPrompt<string>()
-                    .Title("Voir les clients servis :")
-                    .AddChoices("Depuis le début", "Par tranche de dates"));
+                    .Title("View served clients:")
+                    .AddChoices("Since beginning", "By date range"));
 
             string dateCondition = "";
 
-            if (filter == "Par tranche de dates") {
-                var from = AnsiConsole.Ask<string>("Date de début (YYYY-MM-DD) :");
-                var to = AnsiConsole.Ask<string>("Date de fin (YYYY-MM-DD) :");
+            if (filter == "By date range") {
+                var from = AnsiConsole.Ask<string>("Start date (YYYY-MM-DD):");
+                var to = AnsiConsole.Ask<string>("End date (YYYY-MM-DD):");
                 dateCondition = $"AND c.date_commande BETWEEN '{from}' AND '{to}'";
             }
 
@@ -67,14 +67,14 @@ namespace ParisShell.Commands {
                 ORDER BY u.nom ASC";
 
             var table = new Table().Border(TableBorder.Rounded)
-                .AddColumn("Nom").AddColumn("Prénom").AddColumn("Email");
+                .AddColumn("Last Name").AddColumn("First Name").AddColumn("Email");
 
             using var cmd = new MySqlCommand(query, _sqlService.GetConnection());
             cmd.Parameters.AddWithValue("@_id", _session.CurrentUser!.Id);
             using var reader = cmd.ExecuteReader();
 
             if (!reader.HasRows) {
-                AnsiConsole.MarkupLine("[yellow]Aucun client trouvé pour ce cuisinier.[/]");
+                Shell.PrintWarning("No clients found.");
                 return;
             }
 
@@ -86,17 +86,9 @@ namespace ParisShell.Commands {
         }
 
         private void ShowPlatsStats() {
-            string query = @"
-                SELECT type_plat, COUNT(*) AS nb, libelle_station
-                FROM plats p
-                JOIN stations_metro s ON p.cuisinier_id = s.station_id
-                WHERE p.cuisinier_id = @_id
-                GROUP BY type_plat
-                ORDER BY nb DESC";
-
             var table = new Table().Border(TableBorder.Rounded)
-                .AddColumn("Type de plat")
-                .AddColumn("Nombre");
+                .AddColumn("Dish Type")
+                .AddColumn("Count");
 
             using var cmd = new MySqlCommand(@"
                 SELECT type_plat, COUNT(*) AS nb
@@ -109,7 +101,7 @@ namespace ParisShell.Commands {
             using var reader = cmd.ExecuteReader();
 
             if (!reader.HasRows) {
-                AnsiConsole.MarkupLine("[yellow]Aucun plat trouvé pour ce cuisinier.[/]");
+                Shell.PrintWarning("No dishes found.");
                 return;
             }
 
@@ -128,14 +120,14 @@ namespace ParisShell.Commands {
 
             var table = new Table().Border(TableBorder.Rounded)
                 .AddColumn("ID").AddColumn("Type")
-                .AddColumn("Nb Pers.").AddColumn("Prix");
+                .AddColumn("People").AddColumn("Price");
 
             using var cmd = new MySqlCommand(query, _sqlService.GetConnection());
             cmd.Parameters.AddWithValue("@_id", _session.CurrentUser!.Id);
             using var reader = cmd.ExecuteReader();
 
             if (!reader.HasRows) {
-                AnsiConsole.MarkupLine("[yellow]Aucun plat proposé aujourd'hui.[/]");
+                Shell.PrintWarning("No dish of the day found.");
                 return;
             }
 
@@ -150,29 +142,30 @@ namespace ParisShell.Commands {
 
             AnsiConsole.Write(table);
         }
+
         private void ShowTotalVentesParPlat() {
             string query = @"
-        SELECT p.plat_id, p.type_plat, COUNT(c.commande_id) AS commandes, 
-               SUM(c.quantite) AS total_qte,
-               SUM(c.quantite * p.prix_par_personne) AS total_vente
-        FROM commandes c
-        JOIN plats p ON p.plat_id = c.plat_id
-        WHERE p.cuisinier_id = @_id
-        GROUP BY p.plat_id, p.type_plat
-        ORDER BY total_vente DESC";
+                SELECT p.plat_id, p.type_plat, COUNT(c.commande_id) AS commandes, 
+                       SUM(c.quantite) AS total_qte,
+                       SUM(c.quantite * p.prix_par_personne) AS total_vente
+                FROM commandes c
+                JOIN plats p ON p.plat_id = c.plat_id
+                WHERE p.cuisinier_id = @_id
+                GROUP BY p.plat_id, p.type_plat
+                ORDER BY total_vente DESC";
 
             var table = new Table().Border(TableBorder.Rounded)
-                .AddColumn("ID Plat")
+                .AddColumn("Dish ID")
                 .AddColumn("Type")
-                .AddColumn("Qté vendue")
-                .AddColumn("Total ventes (€)");
+                .AddColumn("Qty Sold")
+                .AddColumn("Total Sales (€)");
 
             using var cmd = new MySqlCommand(query, _sqlService.GetConnection());
             cmd.Parameters.AddWithValue("@_id", _session.CurrentUser!.Id);
             using var reader = cmd.ExecuteReader();
 
             if (!reader.HasRows) {
-                AnsiConsole.MarkupLine("[yellow]Aucune vente enregistrée pour vos plats.[/]");
+                Shell.PrintWarning("No sales data found.");
                 return;
             }
 
@@ -187,6 +180,5 @@ namespace ParisShell.Commands {
 
             AnsiConsole.Write(table);
         }
-
     }
 }

@@ -18,27 +18,26 @@ namespace ParisShell.Commands {
         public void Execute(string[] args) {
 
             if (_sqlService.IsConnected) {
-                AnsiConsole.MarkupLine("Already connected");
+                Shell.PrintWarning("Already connected.");
                 return;
             }
 
             var arguments = ParseArguments(args);
 
             if (!arguments.ContainsKey("user") || !arguments.ContainsKey("password")) {
-                AnsiConsole.MarkupLine("[red]⛔ Vous devez spécifier un utilisateur avec '-u' et un mot de passe avec '--password'.[/]");
+                Shell.PrintError("You must provide a user with '-u' and a password with '--password'.");
                 return;
             }
 
             string user = arguments["user"];
             string password = arguments["password"];
-            string host = arguments.ContainsKey("host") ? arguments["host"] : "localhost"; // Valeur par défaut pour l'hôte
-            string database = arguments.ContainsKey("db") ? arguments["db"] : "Livininparis_219"; 
-            string port = arguments.ContainsKey("port") ? arguments["port"] : "3306"; // Valeur par défaut pour le port
+            string host = arguments.ContainsKey("host") ? arguments["host"] : "localhost";
+            string database = arguments.ContainsKey("db") ? arguments["db"] : "Livininparis_219";
+            string port = arguments.ContainsKey("port") ? arguments["port"] : "3306";
 
-            // Utiliser SqlService pour la connexion
             var config = new SqlConnectionConfig {
                 SERVER = host,
-                PORT = port, // Correctement attribuer le port
+                PORT = port,
                 UID = user,
                 DATABASE = database,
                 PASSWORD = password
@@ -47,59 +46,52 @@ namespace ParisShell.Commands {
             _sqlService.Connect(config);
         }
 
-        // Méthode pour analyser les arguments de la commande
         private Dictionary<string, string> ParseArguments(string[] args) {
             var result = new Dictionary<string, string>();
 
             for (int i = 0; i < args.Length; i++) {
-                // Identifier et associer les options et leurs valeurs
                 if (args[i] == "-u" || args[i] == "--user") {
                     if (i + 1 < args.Length) {
-                        result["user"] = args[i + 1];
-                        i++; // Passer à l'argument suivant après le `-u`
+                        result["user"] = args[++i];
                     }
                     else {
-                        AnsiConsole.MarkupLine("[red]⛔ L'option '-u' requiert un utilisateur après.[/]");
+                        Shell.PrintError("'-u' requires a user.");
                     }
                 }
                 else if (args[i] == "--password" || args[i] == "-p") {
                     if (i + 1 < args.Length) {
-                        result["password"] = args[i + 1];
-                        i++; // Passer à l'argument suivant après le `--password`
+                        result["password"] = args[++i];
                     }
                     else {
-                        AnsiConsole.MarkupLine("[red]⛔ L'option '--password' requiert un mot de passe après.[/]");
+                        Shell.PrintError("'--password' requires a value.");
                     }
                 }
                 else if (args[i] == "--host" || args[i] == "-h") {
                     if (i + 1 < args.Length) {
-                        result["host"] = args[i + 1];
-                        i++;
+                        result["host"] = args[++i];
                     }
                     else {
-                        AnsiConsole.MarkupLine("[red]⛔ L'option '--host' requiert un nom d'hôte après.[/]");
+                        Shell.PrintError("'--host' requires a value.");
                     }
                 }
                 else if (args[i] == "--db") {
                     if (i + 1 < args.Length) {
-                        result["db"] = args[i + 1];
-                        i++;
+                        result["db"] = args[++i];
                     }
                     else {
-                        AnsiConsole.MarkupLine("[red]⛔ L'option '--db' requiert un nom de base de données après.[/]");
+                        Shell.PrintError("'--db' requires a value.");
                     }
                 }
                 else if (args[i] == "--port") {
                     if (i + 1 < args.Length) {
-                        result["port"] = args[i + 1];
-                        i++;
+                        result["port"] = args[++i];
                     }
                     else {
-                        AnsiConsole.MarkupLine("[red]⛔ L'option '--port' requiert un numéro de port après.[/]");
+                        Shell.PrintError("'--port' requires a value.");
                     }
                 }
                 else {
-                    AnsiConsole.MarkupLine($"[yellow]Option non reconnue : {args[i]}[/]");
+                    Shell.PrintWarning($"Unknown option: {args[i]}");
                 }
             }
 

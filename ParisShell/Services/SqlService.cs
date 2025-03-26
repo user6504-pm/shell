@@ -3,17 +3,21 @@ using System.Data;
 using MySql.Data.MySqlClient;
 using Spectre.Console;
 using ParisShell.Models;
-using Org.BouncyCastle.Bcpg;
 
-namespace ParisShell.Services {
-    internal class SqlService {
+namespace ParisShell.Services
+{
+    internal class SqlService
+    {
         private MySqlConnection? _connection;
+
         public MySqlConnection GetConnection() => _connection;
         public bool IsConnected => _connection?.State == ConnectionState.Open;
 
-        public bool Connect(SqlConnectionConfig config) {
-            if (!config.IsValid()) {
-                AnsiConsole.MarkupLine("[maroon]⛔ Paramètres de connexion invalides.[/]");
+        public bool Connect(SqlConnectionConfig config)
+        {
+            if (!config.IsValid())
+            {
+                Shell.PrintError("Invalid connection parameters.");
                 return false;
             }
 
@@ -21,64 +25,71 @@ namespace ParisShell.Services {
                              $"DATABASE={config.DATABASE};" +
                              $"UID={config.UID};PASSWORD={config.PASSWORD}";
 
-            try {
+            try
+            {
                 _connection = new MySqlConnection(connStr);
                 _connection.Open();
 
-                AnsiConsole.MarkupLine("[lime]✅ Connexion réussie à la base [bold]{0}[/][/]", config.DATABASE);
+                Shell.PrintSucces($"Successfully connected to [bold]{config.DATABASE}[/].");
                 return true;
             }
-            catch (Exception ex) {
-                AnsiConsole.MarkupLine("[maroon]Erreur de connexion :[/] " + ex.Message);
+            catch (Exception ex)
+            {
+                Shell.PrintError("Connection failed: " + ex.Message);
                 return false;
             }
         }
 
-        public void Disconnect() {
-            if (_connection?.State == ConnectionState.Open) {
+        public void Disconnect()
+        {
+            if (_connection?.State == ConnectionState.Open)
+            {
                 _connection.Close();
-                AnsiConsole.MarkupLine("[white]🔌 Déconnecté de la base de données.[/]");
+                Shell.PrintWarning("Disconnected from database.");
             }
         }
 
-
-        public void ExecuteAndDisplay(string sql) {
-            if (!IsConnected) {
-                AnsiConsole.MarkupLine("[maroon]⛔ Vous n'êtes pas connecté à une base de données.[/]");
+        public void ExecuteAndDisplay(string sql)
+        {
+            if (!IsConnected)
+            {
+                Shell.PrintError("Not connected to a database.");
                 return;
             }
 
-            try {
+            try
+            {
                 using var cmd = new MySqlCommand(sql, _connection);
                 using var reader = cmd.ExecuteReader();
 
-                if (!reader.HasRows) {
-                    AnsiConsole.MarkupLine("[olive]⚠️ Aucune donnée retournée.[/]");
+                if (!reader.HasRows)
+                {
+                    Shell.PrintWarning("No data returned.");
                     return;
                 }
 
-                // Créer une table pour afficher les résultats
                 var table = new Table().Border(TableBorder.Rounded);
 
-                // Ajouter les colonnes (noms des colonnes SQL)
-                for (int i = 0; i < reader.FieldCount; i++) {
+                for (int i = 0; i < reader.FieldCount; i++)
+                {
                     table.AddColumn($"[bold]{reader.GetName(i)}[/]");
                 }
 
-                // Ajouter les lignes avec les résultats
-                while (reader.Read()) {
+                while (reader.Read())
+                {
                     var row = new List<string>();
-                    for (int i = 0; i < reader.FieldCount; i++) {
+                    for (int i = 0; i < reader.FieldCount; i++)
+                    {
                         row.Add(reader[i]?.ToString() ?? "");
                     }
                     table.AddRow(row.ToArray());
                 }
 
-                // Afficher la table
                 AnsiConsole.Write(table);
             }
-            catch (Exception ex) {
-                AnsiConsole.MarkupLine($"[maroon]Erreur SQL :[/] {ex.Message}");
+            catch (Exception ex)
+            {
+                Shell.PrintError("SQL Error: " + ex.Message);
             }
         }
     }

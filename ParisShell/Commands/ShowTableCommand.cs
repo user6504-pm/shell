@@ -17,70 +17,61 @@ namespace ParisShell.Commands {
         }
 
         public void Execute(string[] args) {
-
-
             if (!_sqlService.IsConnected) {
-                AnsiConsole.MarkupLine("[red]⛔ Vous devez être connecté à une base de données.[/]");
+                Shell.PrintError("You must be connected to a database.");
                 return;
             }
 
             if (args.Length == 0) {
-                AnsiConsole.MarkupLine("[red]⛔ Vous devez spécifier un nom de table.[/]");
+                Shell.PrintError("You must specify a table name.");
                 return;
             }
 
             string tableName = args[0];
 
-
-
-
             if (_session.IsInRole("BOZO")) {
-                // Vérifier si la table existe dans la base de données
                 if (!TableExists(tableName)) {
-                    AnsiConsole.MarkupLine($"[red]⛔ La table [bold]{tableName}[/] n'existe pas dans la base de données.[/]");
+                    Shell.PrintError($"Table [bold]{tableName}[/] does not exist.");
                     return;
                 }
                 string _query = $"SELECT * FROM {tableName}";
                 _sqlService.ExecuteAndDisplay(_query);
                 return;
             }
+
             if (!TableExistsRole(tableName)) {
-                AnsiConsole.MarkupLine($"[red]⛔ La table [bold]{tableName}[/] n'existe pas dans la base de données.[/]");
+                Shell.PrintError($"Table [bold]{tableName}[/] does not exist or access is denied.");
                 return;
             }
+
             string query = $"SELECT * FROM {tableName}";
             _sqlService.ExecuteAndDisplay(query);
-            return;
         }
 
         private bool TableExists(string tableName) {
             try {
-                // Utiliser directement _sqlService pour exécuter la requête
                 string query = $"SHOW TABLES LIKE '{tableName}'";
-                using var cmd = new MySqlCommand(query, _sqlService.GetConnection());  // Correction ici
+                using var cmd = new MySqlCommand(query, _sqlService.GetConnection());
                 var result = cmd.ExecuteScalar();
-
-                return result != null; // Si la table existe, la requête retournera quelque chose
+                return result != null;
             }
             catch (Exception ex) {
-                AnsiConsole.MarkupLine($"[red]⛔ Erreur lors de la vérification de la table : {ex.Message}[/]");
+                Shell.PrintError($"Error while checking table: {ex.Message}");
                 return false;
             }
         }
+
         private bool TableExistsRole(string tableName) {
-            // 🔒 Vérification d’autorisation par rôle
             var userRoles = _session.CurrentUser?.Roles ?? new List<string>();
             var roleTables = new Dictionary<string, List<string>>(StringComparer.OrdinalIgnoreCase) {
                 ["CUISINIER"] = new List<string> { "plats", "evaluations" },
                 ["CLIENT"] = new List<string> { "evaluations", "plats" },
                 ["ADMIN"] = new List<string> {
-            "users", "roles", "user_roles", "plats", "commandes", "evaluations", "clients",
-            "cuisiniers", "stations_metro", "connexions_metro"
-        }
-                // Ajoute d'autres rôles si nécessaire
+                    "users", "roles", "user_roles", "plats", "commandes", "evaluations", "clients",
+                    "cuisiniers", "stations_metro", "connexions_metro"
+                }
             };
 
-            // Tables accessibles à l’utilisateur
             var accessibleTables = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
 
             foreach (var role in userRoles) {
@@ -90,13 +81,11 @@ namespace ParisShell.Commands {
                 }
             }
 
-            // 🔍 Est-ce que la table demandée est autorisée ?
             if (!accessibleTables.Contains(tableName)) {
-                AnsiConsole.MarkupLine($"[red]⛔ Accès interdit à la table '{tableName}'.[/]");
+                Shell.PrintError($"Access to table '{tableName}' is denied.");
                 return false;
             }
 
-            // ✅ Vérification SQL si la table existe vraiment
             try {
                 string query = $"SHOW TABLES LIKE @tableName";
                 using var cmd = new MySqlCommand(query, _sqlService.GetConnection());
@@ -106,11 +95,9 @@ namespace ParisShell.Commands {
                 return result != null;
             }
             catch (Exception ex) {
-                AnsiConsole.MarkupLine($"[red]⛔ Erreur lors de la vérification SQL : {ex.Message}[/]");
+                Shell.PrintError($"SQL check error: {ex.Message}");
                 return false;
             }
         }
-        
     }
-    
 }

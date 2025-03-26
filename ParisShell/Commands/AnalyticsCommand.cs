@@ -16,12 +16,12 @@ internal class AnalyticsCommand : ICommand {
 
     public void Execute(string[] args) {
         if (!_session.IsInRole("admin") && !_session.IsInRole("bozo")) {
-            AnsiConsole.MarkupLine("[red]⛔ Accès restreint aux administrateurs et bozos.[/]");
+            Shell.PrintError("Access restricted to administrators and bozos.");
             return;
         }
 
         if (args.Length == 0) {
-            AnsiConsole.MarkupLine("[yellow]Utilisation : analytics [livraisons|commandes|avg-prix|avg-comptes|commandes-client][/]");
+            Shell.PrintWarning("Usage: analytics [livraisons|commandes|avg-prix|avg-comptes|commandes-client]");
             return;
         }
 
@@ -42,7 +42,7 @@ internal class AnalyticsCommand : ICommand {
                 ShowCommandesClientParNationaliteEtPeriode();
                 break;
             default:
-                AnsiConsole.MarkupLine("[red]⛔ Sous-commande inconnue.[/]");
+                Shell.PrintError("Unknown subcommand.");
                 break;
         }
     }
@@ -57,7 +57,11 @@ internal class AnalyticsCommand : ICommand {
             WHERE c.statut = 'LIVREE'
             GROUP BY cu.cuisinier_id";
 
-        var table = new Table().AddColumn("Nom").AddColumn("Prénom").AddColumn("Livraisons");
+        var table = new Table().Border(TableBorder.Rounded)
+            .AddColumn("Last Name")
+            .AddColumn("First Name")
+            .AddColumn("Deliveries");
+
         using var cmd = new MySqlCommand(query, _sqlService.GetConnection());
         using var reader = cmd.ExecuteReader();
 
@@ -69,8 +73,8 @@ internal class AnalyticsCommand : ICommand {
     }
 
     private void ShowCommandesParPeriode() {
-        var from = AnsiConsole.Ask<string>("Date de début (YYYY-MM-DD) :");
-        var to = AnsiConsole.Ask<string>("Date de fin (YYYY-MM-DD) :");
+        var from = AnsiConsole.Ask<string>("Start date (YYYY-MM-DD):");
+        var to = AnsiConsole.Ask<string>("End date (YYYY-MM-DD):");
 
         string query = @"
             SELECT c.commande_id, u.nom, u.prenom, c.date_commande, c.quantite, c.statut
@@ -79,8 +83,13 @@ internal class AnalyticsCommand : ICommand {
             WHERE c.date_commande BETWEEN @from AND @to
             ORDER BY c.date_commande DESC";
 
-        var table = new Table().AddColumn("ID").AddColumn("Nom").AddColumn("Prénom").AddColumn("Date")
-                               .AddColumn("Quantité").AddColumn("Statut");
+        var table = new Table().Border(TableBorder.Rounded)
+            .AddColumn("ID")
+            .AddColumn("Last Name")
+            .AddColumn("First Name")
+            .AddColumn("Date")
+            .AddColumn("Quantity")
+            .AddColumn("Status");
 
         using var cmd = new MySqlCommand(query, _sqlService.GetConnection());
         cmd.Parameters.AddWithValue("@from", from);
@@ -109,7 +118,7 @@ internal class AnalyticsCommand : ICommand {
 
         using var cmd = new MySqlCommand(query, _sqlService.GetConnection());
         var result = cmd.ExecuteScalar();
-        AnsiConsole.MarkupLine($"[green]💶 Prix moyen d’une commande :[/] [bold]{result:0.00} €[/]");
+        AnsiConsole.MarkupLine($"[green]💶 Average order price:[/] [bold]{result:0.00} €[/]");
     }
 
     private void ShowAverageComptesClients() {
@@ -122,14 +131,14 @@ internal class AnalyticsCommand : ICommand {
         var totalUsers = Convert.ToInt32(cmd2.ExecuteScalar());
 
         double ratio = (double)count / totalUsers * 100;
-        AnsiConsole.MarkupLine($"[blue]👥 Pourcentage de comptes clients :[/] [bold]{ratio:0.00}%[/]");
+        AnsiConsole.MarkupLine($"[blue]👥 Client account percentage:[/] [bold]{ratio:0.00}%[/]");
     }
 
     private void ShowCommandesClientParNationaliteEtPeriode() {
-        string email = AnsiConsole.Ask<string>("Email du client :");
-        string nat = AnsiConsole.Ask<string>("Nationalité du plat (ou vide pour toutes) :");
-        string from = AnsiConsole.Ask<string>("Date de début (YYYY-MM-DD) :");
-        string to = AnsiConsole.Ask<string>("Date de fin (YYYY-MM-DD) :");
+        string email = AnsiConsole.Ask<string>("Client email:");
+        string nat = AnsiConsole.Ask<string>("Dish nationality (leave empty for all):");
+        string from = AnsiConsole.Ask<string>("Start date (YYYY-MM-DD):");
+        string to = AnsiConsole.Ask<string>("End date (YYYY-MM-DD):");
 
         string query = @"
             SELECT c.commande_id, c.date_commande, p.nationalite, p.type_plat, p.prix_par_personne, c.quantite
@@ -142,13 +151,13 @@ internal class AnalyticsCommand : ICommand {
         if (!string.IsNullOrWhiteSpace(nat))
             query += " AND p.nationalite = @nat";
 
-        var table = new Table()
+        var table = new Table().Border(TableBorder.Rounded)
             .AddColumn("ID")
             .AddColumn("Date")
-            .AddColumn("Nationalité")
+            .AddColumn("Nationality")
             .AddColumn("Type")
-            .AddColumn("Prix")
-            .AddColumn("Quantité");
+            .AddColumn("Price")
+            .AddColumn("Quantity");
 
         using var cmd = new MySqlCommand(query, _sqlService.GetConnection());
         cmd.Parameters.AddWithValue("@email", email);

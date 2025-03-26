@@ -9,10 +9,10 @@ namespace ParisShell.Commands {
         public string Name => "initdb";
 
         public void Execute(string[] args) {
-            AnsiConsole.MarkupLine("[yellow]⚠️ Initialisation de la base de données Livininparis_219...[/]");
+            Shell.PrintWarning("Initializing database [bold]Livininparis_219[/]...");
 
             string mdp = AnsiConsole.Prompt(
-                new TextPrompt<string>("Mot de passe MySQL [grey](root)[/]:")
+                new TextPrompt<string>("MySQL password [grey](root)[/]:")
                 .PromptStyle("red")
                 .Secret());
 
@@ -27,10 +27,10 @@ namespace ParisShell.Commands {
 
                 maConnexion = new MySqlConnection(connexionString);
                 maConnexion.Open();
-                AnsiConsole.MarkupLine("[green]✅ Connexion à MySQL réussie.[/]");
+                Shell.PrintSucces("Connected to MySQL.");
             }
             catch (MySqlException e) {
-                AnsiConsole.MarkupLine($"[red]⛔ Erreur de connexion :[/] {e.Message}");
+                Shell.PrintError($"Connection error: {e.Message}");
                 return;
             }
 
@@ -130,28 +130,33 @@ namespace ParisShell.Commands {
                     command.ExecuteNonQuery();
                 }
                 catch (MySqlException e) {
-                    AnsiConsole.MarkupLine($"[red]⛔ Erreur SQL :[/] {e.Message}");
+                    Shell.PrintError($"SQL Error: {e.Message}");
                     return;
                 }
             }
 
-            AnsiConsole.MarkupLine("[green]✅ Tables créées avec succès.[/]");
+            Shell.PrintSucces("Tables successfully created.");
 
-            try {
-                AnsiConsole.MarkupLine("[blue]📥 Importation des stations...[/]");
-                ImportStations.ImportStationsMySql(cheminExcel, maConnexion);
+            AnsiConsole.Status()
+                .Start("Importing data...", ctx => {
+                    try {
+                        ctx.Spinner(Spinner.Known.Dots2);
+                        ctx.SpinnerStyle(Style.Parse("green"));
+                        ctx.Status("Importing metro stations...");
+                        ImportStations.ImportStationsMySql(cheminExcel, maConnexion);
 
-                AnsiConsole.MarkupLine("[blue]🔗 Importation des connexions métro...[/]");
-                Connexions.ConnexionsSql(cheminExcel, maConnexion);
+                        ctx.Status("Importing metro connections...");
+                        Connexions.ConnexionsSql(cheminExcel, maConnexion);
 
-                AnsiConsole.MarkupLine("[green]✅ Données importées avec succès.[/]");
-            }
-            catch (Exception ex) {
-                AnsiConsole.MarkupLine($"[red]⛔ Erreur d'import :[/] {ex.Message}");
-            }
+                        Shell.PrintSucces("Excel data imported successfully.");
+                    }
+                    catch (Exception ex) {
+                        Shell.PrintError($"Import error: {ex.Message}");
+                    }
+                });
 
             maConnexion.Close();
-            AnsiConsole.MarkupLine("[grey]🔌 Connexion fermée.[/]");
+            Shell.PrintWarning("Connection closed.");
         }
     }
 }

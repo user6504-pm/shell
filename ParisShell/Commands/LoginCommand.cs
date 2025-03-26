@@ -21,7 +21,7 @@ namespace ParisShell.Commands {
             var input = ParseArgs(args);
 
             if (!input.ContainsKey("email") || !input.ContainsKey("pwd")) {
-                AnsiConsole.MarkupLine("[red]⛔ Utilisation : login --email <email> --pwd <motdepasse>[/]");
+                Shell.PrintError("Usage: login --email <email> --pwd <password>");
                 return;
             }
 
@@ -29,7 +29,6 @@ namespace ParisShell.Commands {
             string password = input["pwd"];
 
             try {
-                // 1. Vérifier l'utilisateur
                 string userQuery = @"
                     SELECT user_id, nom, prenom
                     FROM users
@@ -37,11 +36,11 @@ namespace ParisShell.Commands {
 
                 using var cmd = new MySqlCommand(userQuery, _sqlService.GetConnection());
                 cmd.Parameters.AddWithValue("@email", email);
-                cmd.Parameters.AddWithValue("@pwd", password); // TODO: hasher
+                cmd.Parameters.AddWithValue("@pwd", password);
 
                 using var reader = cmd.ExecuteReader();
                 if (!reader.Read()) {
-                    AnsiConsole.MarkupLine("[red]⛔ Identifiants incorrects.[/]");
+                    Shell.PrintError("Invalid credentials.");
                     return;
                 }
 
@@ -54,7 +53,6 @@ namespace ParisShell.Commands {
 
                 reader.Close();
 
-                // 2. Récupérer ses rôles
                 string roleQuery = @"
                     SELECT r.role_name
                     FROM user_roles ur
@@ -71,10 +69,10 @@ namespace ParisShell.Commands {
 
                 _session.CurrentUser = user;
 
-                AnsiConsole.MarkupLine($"[green]✅ Connecté en tant que [bold]{user.Prenom} {user.Nom}[/] ([blue]{string.Join(", ", user.Roles)}[/])[/]");
+                Shell.PrintSucces($"Logged in as [bold]{user.Prenom} {user.Nom}[/] ([blue]{string.Join(", ", user.Roles)}[/])");
             }
             catch (Exception ex) {
-                AnsiConsole.MarkupLine($"[red]⛔ Erreur de connexion : {ex.Message}[/]");
+                Shell.PrintError($"Login error: {ex.Message}");
             }
         }
 

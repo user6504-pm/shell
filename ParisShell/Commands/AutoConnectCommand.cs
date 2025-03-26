@@ -16,7 +16,6 @@ namespace ParisShell.Commands {
         }
 
         public void Execute(string[] args) {
-            // 1. Connexion MySQL
             var config = new SqlConnectionConfig {
                 SERVER = "localhost",
                 PORT = "3306",
@@ -26,14 +25,14 @@ namespace ParisShell.Commands {
             };
 
             if (!_sqlService.Connect(config)) {
-                AnsiConsole.MarkupLine("[red]⛔ Échec de la connexion MySQL.[/]");
+                Shell.PrintError("MySQL connection failed.");
                 return;
             }
-            AnsiConsole.MarkupLine("[green]✅ Connecté à MySQL avec succès.[/]");
 
-            // 2. Login applicatif
+            Shell.PrintSucces("Connected to MySQL.");
+
             string email = "Mdupond@gmail.com";
-            string mdp = "hashedmdp"; // à adapter si hashage à comparer
+            string mdp = "hashedmdp";
 
             try {
                 string userQuery = @"
@@ -47,11 +46,11 @@ namespace ParisShell.Commands {
 
                 using var reader = cmd.ExecuteReader();
                 if (!reader.Read()) {
-                    AnsiConsole.MarkupLine("[red]⛔ Identifiants invalides.[/]");
+                    Shell.PrintError("Invalid credentials.");
                     return;
                 }
 
-                var user = new Models.User {
+                var user = new User {
                     Id = reader.GetInt32("user_id"),
                     Nom = reader.GetString("nom"),
                     Prenom = reader.GetString("prenom"),
@@ -59,11 +58,11 @@ namespace ParisShell.Commands {
                 };
                 reader.Close();
 
-                // Rôles
-                string roleQuery = @"SELECT r.role_name
-                                     FROM user_roles ur
-                                     JOIN roles r ON r.role_id = ur.role_id
-                                     WHERE ur.user_id = @uid";
+                string roleQuery = @"
+                    SELECT r.role_name
+                    FROM user_roles ur
+                    JOIN roles r ON r.role_id = ur.role_id
+                    WHERE ur.user_id = @uid";
 
                 using var roleCmd = new MySqlCommand(roleQuery, _sqlService.GetConnection());
                 roleCmd.Parameters.AddWithValue("@uid", user.Id);
@@ -75,10 +74,10 @@ namespace ParisShell.Commands {
 
                 _session.CurrentUser = user;
 
-                AnsiConsole.MarkupLine($"[green]✅ Connecté en tant que [bold]{user.Prenom} {user.Nom}[/] ([blue]{string.Join(", ", user.Roles)}[/])[/]");
+                Shell.PrintSucces($"Logged in as [bold]{user.Prenom} {user.Nom}[/] ([blue]{string.Join(", ", user.Roles)}[/])");
             }
             catch (Exception ex) {
-                AnsiConsole.MarkupLine($"[red]⛔ Erreur pendant le login : {ex.Message}[/]");
+                Shell.PrintError($"Login error: {ex.Message}");
             }
         }
     }
