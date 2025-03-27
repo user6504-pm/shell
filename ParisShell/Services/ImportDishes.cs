@@ -63,9 +63,10 @@ public class ImportDishes
                 {
                     string typePlat = feuille.Cells[ligne, 2].Text;
                     int nbPersonnes = int.Parse(feuille.Cells[ligne, 3].Text);
-                    DateTime fabrication = DateTime.Parse(feuille.Cells[ligne, 4].Text);
-                    DateTime peremption = DateTime.Parse(feuille.Cells[ligne, 5].Text);
+                  
                     decimal prix = decimal.Parse(feuille.Cells[ligne, 6].Text, CultureInfo.InvariantCulture);
+                    DateTime fabrication = feuille.Cells[ligne, 4].GetValue<DateTime>();
+                    DateTime peremption = feuille.Cells[ligne, 5].GetValue<DateTime>();
                     string nationalite = feuille.Cells[ligne, 7].Text;
                     string regime = feuille.Cells[ligne, 8].Text;
                     string ingredients = feuille.Cells[ligne, 9].Text;
