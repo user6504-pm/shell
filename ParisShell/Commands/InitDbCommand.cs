@@ -148,6 +148,9 @@ namespace ParisShell.Commands {
                         ctx.Status("Importing metro connections...");
                         Connexions.ConnexionsSql(cheminExcel, maConnexion);
 
+                        ctx.Status("Importing users...");
+                        ImportUser.ImportUtilisateursMySql("../../../../user.xlsx", maConnexion);
+
                         Shell.PrintSucces("Excel data imported successfully.");
                     }
                     catch (Exception ex) {

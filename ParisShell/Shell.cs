@@ -107,7 +107,7 @@ namespace ParisShell {
             AnsiConsole.MarkupLine($"[bold lime]SUCCES[/][bold white]: [/]{message}");
         }
         public static void PrintWarning(string message) {
-            AnsiConsole.MarkupLine($"[bold orange1]SUCCES[/][bold white]: [/]{message}");
+            AnsiConsole.MarkupLine($"[bold orange1]WARNING[/][bold white]: [/]{message}");
         }
 
         private string Statusus() {

@@ -31,8 +31,8 @@ namespace ParisShell.Commands {
 
             Shell.PrintSucces("Connected to MySQL.");
 
-            string email = "Mdupond@gmail.com";
-            string mdp = "hashedmdp";
+            string email = "mhamon@riou.com";
+            string mdp = "(76^Ltafi5";
 
             try {
                 string userQuery = @"
