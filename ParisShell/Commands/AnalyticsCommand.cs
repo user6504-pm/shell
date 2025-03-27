@@ -15,30 +15,30 @@ internal class AnalyticsCommand : ICommand {
     }
 
     public void Execute(string[] args) {
-        if (!_session.IsInRole("admin") && !_session.IsInRole("bozo")) {
+        if (!_session.IsInRole("ADMIN") && !_session.IsInRole("BOZO")) {
             Shell.PrintError("Access restricted to administrators and bozos.");
             return;
         }
 
         if (args.Length == 0) {
-            Shell.PrintWarning("Usage: analytics [livraisons|commandes|avg-prix|avg-comptes|commandes-client]");
+            Shell.PrintWarning("Usage: analytics [delivery|orders|avg-price|avg-acc|client-orders]");
             return;
         }
 
         switch (args[0]) {
-            case "livraisons":
+            case "delivery":
                 ShowLivraisonsParCuisinier();
                 break;
-            case "commandes":
+            case "orders":
                 ShowCommandesParPeriode();
                 break;
-            case "avg-prix":
+            case "avg-price":
                 ShowAveragePrixCommandes();
                 break;
-            case "avg-comptes":
+            case "avg-acc":
                 ShowAverageComptesClients();
                 break;
-            case "commandes-client":
+            case "client-orders":
                 ShowCommandesClientParNationaliteEtPeriode();
                 break;
             default:
@@ -52,10 +52,9 @@ internal class AnalyticsCommand : ICommand {
             SELECT u.nom, u.prenom, COUNT(*) AS livraisons
             FROM commandes c
             JOIN plats p ON c.plat_id = p.plat_id
-            JOIN cuisiniers cu ON p.cuisinier_id = cu.cuisinier_id
-            JOIN users u ON cu.cuisinier_id = u.user_id
+            JOIN users u ON p.user_id = u.user_id
             WHERE c.statut = 'LIVREE'
-            GROUP BY cu.cuisinier_id";
+            GROUP BY p.user_id";
 
         var table = new Table().Border(TableBorder.Rounded)
             .AddColumn("Last Name")

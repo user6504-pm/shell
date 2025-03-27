@@ -16,6 +16,21 @@ namespace ParisShell.Commands {
         }
 
         public void Execute(string[] args) {
+            string email = "", password = "";
+
+            if (args.Contains("-c")) {
+                email = "catherine38@le.fr";
+                password = ")*3Kx)txM(";
+            }
+            else if (args.Contains("-b")) {
+                email = "bozo";
+                password = "Bozo1234@";
+            }
+            else {
+                email = "jbruneau@gilles.net";
+                password = "$j4aoW8b01";
+            }
+
             var config = new SqlConnectionConfig {
                 SERVER = "localhost",
                 PORT = "3306",
@@ -31,9 +46,6 @@ namespace ParisShell.Commands {
 
             Shell.PrintSucces("Connected to MySQL.");
 
-            string email = "bozo";
-            string mdp = "Bozo1234@";
-
             try {
                 string userQuery = @"
                     SELECT user_id, nom, prenom
@@ -42,7 +54,7 @@ namespace ParisShell.Commands {
 
                 using var cmd = new MySqlCommand(userQuery, _sqlService.GetConnection());
                 cmd.Parameters.AddWithValue("@mail", email);
-                cmd.Parameters.AddWithValue("@pwd", mdp);
+                cmd.Parameters.AddWithValue("@pwd", password);
 
                 using var reader = cmd.ExecuteReader();
                 if (!reader.Read()) {

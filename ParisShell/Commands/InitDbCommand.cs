@@ -11,10 +11,12 @@ namespace ParisShell.Commands {
         public void Execute(string[] args) {
             Shell.PrintWarning("Initializing database [bold]Livininparis_219[/]...");
 
+            Console.CursorVisible = false;
+
             string mdp = AnsiConsole.Prompt(
                 new TextPrompt<string>("MySQL password [grey](root)[/]:")
                 .PromptStyle("red")
-                .Secret());
+                .Secret(' '));
 
             string cheminExcel = "../../../../MetroParis.xlsx";
             FileInfo fichierExcel = new FileInfo(cheminExcel);
@@ -32,6 +34,9 @@ namespace ParisShell.Commands {
             catch (MySqlException e) {
                 Shell.PrintError($"Connection error: {e.Message}");
                 return;
+            }
+            finally {
+                Console.CursorVisible = true;
             }
 
             List<string> tableQueries = new()

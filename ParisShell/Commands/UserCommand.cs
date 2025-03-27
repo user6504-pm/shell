@@ -18,7 +18,7 @@ internal class UserCommand : ICommand {
     }
 
     public void Execute(string[] args) {
-        if (!_session.IsInRole("admin") && !_session.IsInRole("bozo")) {
+        if (!_session.IsInRole("ADMIN") && !_session.IsInRole("BOZO")) {
             Shell.PrintError("Access denied. Admin or bozo only.");
             return;
         }
@@ -48,6 +48,9 @@ internal class UserCommand : ICommand {
                 break;
             case "list":
                 ListUsers();
+                break;
+            case "getid":
+                GetUserId();
                 break;
             default:
                 Shell.PrintError("Unknown subcommand.");
@@ -121,22 +124,31 @@ internal class UserCommand : ICommand {
                 .Title("Sort by:")
                 .AddChoices("Name (A-Z)", "Address", "Total purchases"));
 
-        string orderSql = sort switch {
-            "Address" => "ORDER BY adresse ASC",
-            "Total purchases" => @"LEFT JOIN commandes c ON u.user_id = c.client_id 
-                                   LEFT JOIN plats p ON c.plat_id = p.plat_id 
-                                   GROUP BY u.user_id 
-                                   ORDER BY IFNULL(SUM(p.prix_par_personne * c.quantite), 0) DESC",
-            _ => "ORDER BY nom ASC"
-        };
+        string query;
 
-        string query = $@"
-            SELECT u.user_id, u.nom, u.prenom, u.adresse, u.email, 
+        if (sort == "Total purchases") {
+            query = @"
+            SELECT u.user_id, u.nom, u.prenom, u.adresse, u.email,
                    IFNULL(SUM(p.prix_par_personne * c.quantite), 0) AS total
             FROM users u
             LEFT JOIN commandes c ON u.user_id = c.client_id
             LEFT JOIN plats p ON c.plat_id = p.plat_id
-            {orderSql}";
+            GROUP BY u.user_id, u.nom, u.prenom, u.adresse, u.email
+            ORDER BY total DESC";
+        }
+        else {
+            string orderColumn = sort == "Address" ? "u.adresse" : "u.nom";
+            query = $@"
+            SELECT u.user_id, u.nom, u.prenom, u.adresse, u.email,
+                   IFNULL((
+                       SELECT SUM(p.prix_par_personne * c.quantite)
+                       FROM commandes c
+                       JOIN plats p ON c.plat_id = p.plat_id
+                       WHERE c.client_id = u.user_id
+                   ), 0) AS total
+            FROM users u
+            ORDER BY {orderColumn} ASC";
+        }
 
         var table = new Table().Border(TableBorder.Rounded)
             .AddColumn("ID")
@@ -155,12 +167,13 @@ internal class UserCommand : ICommand {
                 reader["prenom"].ToString(),
                 reader["adresse"].ToString(),
                 reader["email"].ToString(),
-                $"{reader["total"]}€"
+                $"{reader["total"]:0.00}€"
             );
         }
 
         AnsiConsole.Write(table);
     }
+
 
     private string Ask(string label) => AnsiConsole.Ask<string>($"[blue]{label} :[/]");
     private string AskSecret(string label) => AnsiConsole.Prompt(new TextPrompt<string>($"[red]{label} :[/]").Secret());
@@ -200,6 +213,42 @@ internal class UserCommand : ICommand {
         cmd.Parameters.AddWithValue("@type", type);
         cmd.ExecuteNonQuery();
     }
+    private void GetUserId() {
+        var nom = Ask("Last name");
+        var prenom = Ask("First name");
+
+        string query = @"
+        SELECT user_id, email
+        FROM users
+        WHERE nom = @n AND prenom = @p";
+
+        using var cmd = new MySqlCommand(query, _sqlService.GetConnection());
+        cmd.Parameters.AddWithValue("@n", nom);
+        cmd.Parameters.AddWithValue("@p", prenom);
+
+        using var reader = cmd.ExecuteReader();
+
+        var table = new Table().Border(TableBorder.Rounded)
+            .AddColumn("User ID")
+            .AddColumn("Email");
+
+        int count = 0;
+        while (reader.Read()) {
+            table.AddRow(
+                reader["user_id"].ToString(),
+                reader["email"].ToString()
+            );
+            count++;
+        }
+
+        if (count == 0) {
+            Shell.PrintWarning("No user found with that name.");
+        }
+        else {
+            AnsiConsole.Write(table);
+        }
+    }
+
 
     private void PrintError(string message) =>
         Shell.PrintError(message);

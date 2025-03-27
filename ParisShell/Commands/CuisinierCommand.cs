@@ -63,7 +63,7 @@ namespace ParisShell.Commands {
                 JOIN plats p ON c.plat_id = p.plat_id
                 JOIN clients cl ON c.client_id = cl.client_id
                 JOIN users u ON cl.client_id = u.user_id
-                WHERE p.cuisinier_id = @_id {dateCondition}
+                WHERE p.user_id = @_id {dateCondition}
                 ORDER BY u.nom ASC";
 
             var table = new Table().Border(TableBorder.Rounded)
@@ -93,7 +93,7 @@ namespace ParisShell.Commands {
             using var cmd = new MySqlCommand(@"
                 SELECT type_plat, COUNT(*) AS nb
                 FROM plats
-                WHERE cuisinier_id = @_id
+                WHERE user_id = @_id
                 GROUP BY type_plat
                 ORDER BY nb DESC", _sqlService.GetConnection());
 
@@ -116,7 +116,7 @@ namespace ParisShell.Commands {
             string query = @"
                 SELECT plat_id, type_plat, nb_personnes, prix_par_personne
                 FROM plats
-                WHERE cuisinier_id = @_id AND date_fabrication = CURDATE()";
+                WHERE user_id = @_id AND date_fabrication = CURDATE()";
 
             var table = new Table().Border(TableBorder.Rounded)
                 .AddColumn("ID").AddColumn("Type")
@@ -150,7 +150,7 @@ namespace ParisShell.Commands {
                        SUM(c.quantite * p.prix_par_personne) AS total_vente
                 FROM commandes c
                 JOIN plats p ON p.plat_id = c.plat_id
-                WHERE p.cuisinier_id = @_id
+                WHERE p.user_id = @_id
                 GROUP BY p.plat_id, p.type_plat
                 ORDER BY total_vente DESC";
 
