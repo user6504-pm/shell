@@ -75,13 +75,9 @@ namespace ParisShell.Commands {
                     type_client ENUM('PARTICULIER','ENTREPRISE') NOT NULL,
                     FOREIGN KEY (client_id) REFERENCES users(user_id) ON UPDATE CASCADE ON DELETE CASCADE
                 );",
-                @"CREATE TABLE IF NOT EXISTS cuisiniers (
-                    cuisinier_id INT PRIMARY KEY,
-                    FOREIGN KEY (cuisinier_id) REFERENCES users(user_id) ON UPDATE CASCADE ON DELETE CASCADE
-                );",
                 @"CREATE TABLE IF NOT EXISTS plats (
                     plat_id INT AUTO_INCREMENT PRIMARY KEY,
-                    cuisinier_id INT NOT NULL,
+                    user_id INT NOT NULL,
                     type_plat ENUM('ENTREE','PLAT PRINCIPAL','DESSERT') NOT NULL,
                     nb_personnes INT NOT NULL,
                     date_fabrication DATE NOT NULL,
@@ -91,7 +87,7 @@ namespace ParisShell.Commands {
                     regime_alimentaire VARCHAR(100),
                     ingredients TEXT,
                     photo VARCHAR(255),
-                    FOREIGN KEY (cuisinier_id) REFERENCES cuisiniers(cuisinier_id) ON UPDATE CASCADE ON DELETE CASCADE
+                    FOREIGN KEY (user_id) REFERENCES users(user_id) ON UPDATE CASCADE ON DELETE CASCADE
                 );",
                 @"CREATE TABLE IF NOT EXISTS commandes (
                     commande_id INT AUTO_INCREMENT PRIMARY KEY,
