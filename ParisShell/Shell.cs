@@ -3,6 +3,7 @@ using ParisShell.Services;
 using Spectre.Console;
 using System;
 using System.Collections.Generic;
+using ZstdSharp.Unsafe;
 
 namespace ParisShell {
     internal class Shell {
@@ -28,7 +29,7 @@ namespace ParisShell {
             commands["graph"] = args => new GraphCommand(_sqlService).Execute(args);
             commands["help"] = args => new HelpCommand(_session).Execute(args);
             commands["register"] = args => new RegisterCommand(_sqlService).Execute(args);
-            commands["newc"] = args => new NewCommand().Execute(args);
+            commands["newc"] = args => new NewCommand(_sqlService, _session).Execute(args);
 
         }
 
@@ -68,18 +69,6 @@ namespace ParisShell {
                 string[] parts = input.Split(' ', StringSplitOptions.RemoveEmptyEntries);
                 string name = parts[0].ToLower();
                 string[] args = parts.Length > 1 ? parts[1..] : Array.Empty<string>();
-
-                var autoriséesSansConnexion = new HashSet<string> { "tuto", "connect", "exit", "help", "clear", "initdb", "autoconnect" };
-                if (!_sqlService.IsConnected && !autoriséesSansConnexion.Contains(name)) {
-                    PrintError("[maroon]not connected to any mysql server.[/]");
-                    continue;
-                }
-
-                var autoriséesSansLogin = new HashSet<string> { "register", "login", "exit", "help", "clear", "connect", "initdb", "disconnect", "graph"};
-                if (_sqlService.IsConnected && !_session.IsAuthenticated && !autoriséesSansLogin.Contains(name)) {
-                    AnsiConsole.MarkupLine("[maroon]not logged in any acc[/]");
-                    continue;
-                }
 
                 if (name == "exit") {
                     PrintSucces("[white]Session ended.[/]");
