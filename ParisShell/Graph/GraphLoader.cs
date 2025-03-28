@@ -46,8 +46,6 @@ namespace ParisShell.Graph
 
             readerConnexions.Close();
             cmdConnexions.Dispose();
-
-            graphe.AfficherGraphique(nomFichier, 1200);
         }
     }
 }
