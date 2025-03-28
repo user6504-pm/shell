@@ -18,15 +18,14 @@ namespace ParisShell.Commands {
         }
 
         public void Execute(string[] args) {
-            var input = ParseArgs(args);
+            string email = AnsiConsole.Prompt(
+                new TextPrompt<string>("Email:")
+                    .PromptStyle("blue"));
 
-            if (!input.ContainsKey("email") || !input.ContainsKey("pwd")) {
-                Shell.PrintError("Usage: login --email <email> --pwd <password>");
-                return;
-            }
-
-            string email = input["email"];
-            string password = input["pwd"];
+            string password = AnsiConsole.Prompt(
+                new TextPrompt<string>("Password:")
+                    .PromptStyle("red")
+                    .Secret(' '));
 
             try {
                 string userQuery = @"
@@ -74,17 +73,6 @@ namespace ParisShell.Commands {
             catch (Exception ex) {
                 Shell.PrintError($"Login error: {ex.Message}");
             }
-        }
-
-        private Dictionary<string, string> ParseArgs(string[] args) {
-            var result = new Dictionary<string, string>();
-            for (int i = 0; i < args.Length; i++) {
-                if ((args[i] == "--email" || args[i] == "-e") && i + 1 < args.Length)
-                    result["email"] = args[++i];
-                else if ((args[i] == "--pwd" || args[i] == "-p") && i + 1 < args.Length)
-                    result["pwd"] = args[++i];
-            }
-            return result;
         }
     }
 }
