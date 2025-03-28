@@ -14,7 +14,7 @@ namespace ParisShell {
         public Shell() {
             commands["clear"] = args => new ClearCommand().Execute(args);
             commands["connect"] = args => new ConnectCommand(_sqlService).Execute(args);
-            commands["disconnect"] = args => new DisconnectCommand(_sqlService).Execute(args);
+            commands["disconnect"] = args => new DisconnectCommand(_sqlService, _session).Execute(args);
             commands["showtable"] = args => new ShowTableCommand(_sqlService, _session).Execute(args);
             commands["showtables"] = args => new ShowTablesCommand(_sqlService, _session).Execute(args);
             commands["cinf"] = args => new CInfCommand(_sqlService, _session).Execute(args);

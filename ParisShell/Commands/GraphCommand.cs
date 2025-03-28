@@ -1,4 +1,5 @@
-﻿using ParisShell.Graph;
+﻿using MySqlX.XDevAPI;
+using ParisShell.Graph;
 using ParisShell.Services;
 using Spectre.Console;
 using System;
@@ -20,6 +21,9 @@ namespace ParisShell.Commands
         }
         public void Execute(string[] args)
         {
+            if (!_sqlService.IsConnected) {
+                Shell.PrintError("Must be connected to a database.");
+            }
             GraphLoader.ConstruireEtAfficherGraph(_sqlService.GetConnection());
         }
     }

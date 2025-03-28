@@ -15,6 +15,12 @@ internal class AnalyticsCommand : ICommand {
     }
 
     public void Execute(string[] args) {
+        if(!_session.IsAuthenticated) {
+            Shell.PrintError("Must be logged to an account.");
+            return;
+        }
+
+
         if (!_session.IsInRole("ADMIN") && !_session.IsInRole("BOZO")) {
             Shell.PrintError("Access restricted to administrators and bozos.");
             return;
