@@ -1,6 +1,10 @@
 ﻿using MySql.Data.MySqlClient;
 using System;
 using System.Collections.Generic;
+using Spectre.Console;
+using ParisShell.Services;
+using System.Data;
+using OfficeOpenXml;
 
 namespace ParisShell.Graph
 {
@@ -46,6 +50,21 @@ namespace ParisShell.Graph
 
             readerConnexions.Close();
             cmdConnexions.Dispose();
+            AnsiConsole.Status()
+                .Start("Creating graph...", ctx => {
+                    try
+                    {
+                        ctx.Spinner(Spinner.Known.Dots4);
+                        ctx.SpinnerStyle(Style.Parse("green"));
+                        graphe.AfficherGraphique(nomFichier, 1200);
+                        Shell.PrintSucces("Graph created successfully.");
+                    }
+                    catch (Exception ex)
+                    {
+                        Shell.PrintError($"Import error: {ex.Message}");
+                    }
+                });
+
         }
     }
 }

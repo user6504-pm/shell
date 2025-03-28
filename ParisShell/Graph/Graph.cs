@@ -291,7 +291,7 @@ namespace ParisShell.Graph {
         private Dictionary<Noeud<T>, SKPoint> CalculerPositionsForceDirected(
             int tailleImage,
             float rayonMax,
-            int iterations = 1,
+            int iterations = 10,
             float attraction = 0.01f,
             float repulsion = 3000f,
             float collisionMargin = 10f

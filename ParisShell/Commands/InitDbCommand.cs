@@ -18,7 +18,7 @@ namespace ParisShell.Commands {
                 .PromptStyle("red")
                 .Secret(' '));
 
-            string cheminExcel = "../../../../MetroParis.xlsx";
+            string cheminExcel = "../../../../Infos_Excel/MetroParis.xlsx";
             FileInfo fichierExcel = new FileInfo(cheminExcel);
 
             MySqlConnection maConnexion = null;
@@ -150,10 +150,10 @@ namespace ParisShell.Commands {
                         Connexions.ConnexionsSql(cheminExcel, maConnexion);
 
                         ctx.Status("Importing users...");
-                        ImportUser.ImportUtilisateursMySql("../../../../user.xlsx", maConnexion);
+                        ImportUser.ImportUtilisateursMySql("../../../../Infos_Excel/user.xlsx", maConnexion);
 
                         ctx.Status("Importing dishes...");
-                        ImportDishes.ImportDishesSQL("../../../../plats_simules.xlsx",maConnexion); 
+                        ImportDishes.ImportDishesSQL("../../../../Infos_Excel/plats_simules.xlsx",maConnexion); 
                     
 
                         Shell.PrintSucces("Excel data imported successfully.");
