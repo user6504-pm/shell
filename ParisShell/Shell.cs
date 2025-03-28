@@ -25,6 +25,7 @@ namespace ParisShell {
             commands["analytics"] = args => new AnalyticsCommand(_sqlService, _session).Execute(args);
             commands["logout"] = args => new LogoutCommand(_session).Execute(args);
             commands["tuto"] = args => new TutoCommand().Execute(args);
+            commands["graph"] = args => new GraphCommand(_sqlService).Execute(args);
         }
 
         public void Run() {
@@ -70,9 +71,9 @@ namespace ParisShell {
                     continue;
                 }
 
-                var autoriséesSansLogin = new HashSet<string> { "login", "exit", "help", "clear", "connect", "initdb", "disconnect"};
+                var autoriséesSansLogin = new HashSet<string> { "login", "exit", "help", "clear", "connect", "initdb", "disconnect", "graph"};
                 if (_sqlService.IsConnected && !_session.IsAuthenticated && !autoriséesSansLogin.Contains(name)) {
-                    AnsiConsole.MarkupLine("[maroon][!][/]");
+                    AnsiConsole.MarkupLine("[maroon]not logged in any acc[/]");
                     continue;
                 }
 
