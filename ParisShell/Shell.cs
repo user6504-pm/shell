@@ -50,7 +50,7 @@ namespace ParisShell {
 [deeppink4_2]                          \/_____/\/_/\/_/\/___/  \/___/   \/___/ [/]
 ");
             AnsiConsole.MarkupLine("[dim]ParisShell v1.0[/]");
-            AnsiConsole.MarkupLine("[dim]Use 'help' for getting started[/]\n");
+            AnsiConsole.MarkupLine("[dim]Use 'tuto' for getting started[/]\n");
 
             while (true) {
                 var prompt = $"[white]{GetPromptUser()}[/][deeppink4_2]@paris[/][white]:{Statusus()}[/][white]$[/] ";
