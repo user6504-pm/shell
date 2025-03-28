@@ -16,6 +16,13 @@ namespace ParisShell.Commands {
         }
 
         public void Execute(string[] args) {
+
+
+            if (_session.IsAuthenticated || _sqlService.IsConnected) {
+                Shell.PrintError("Already logged or connected.");
+                return;
+            }
+
             string email = "", password = "";
 
             if (args.Contains("-c")) {
