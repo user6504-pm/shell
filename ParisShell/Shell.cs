@@ -24,6 +24,7 @@ namespace ParisShell {
             commands["cuisinier"] = args => new CuisinierCommand(_sqlService, _session).Execute(args);
             commands["analytics"] = args => new AnalyticsCommand(_sqlService, _session).Execute(args);
             commands["logout"] = args => new LogoutCommand(_session).Execute(args);
+            commands["tuto"] = args => new TutoCommand().Execute(args);
         }
 
         public void Run() {
@@ -63,7 +64,7 @@ namespace ParisShell {
                 string name = parts[0].ToLower();
                 string[] args = parts.Length > 1 ? parts[1..] : Array.Empty<string>();
 
-                var autoriséesSansConnexion = new HashSet<string> { "connect", "exit", "help", "clear", "initdb", "autoconnect" };
+                var autoriséesSansConnexion = new HashSet<string> { "tuto", "connect", "exit", "help", "clear", "initdb", "autoconnect" };
                 if (!_sqlService.IsConnected && !autoriséesSansConnexion.Contains(name)) {
                     PrintError("[maroon]not connected to any mysql server.[/]");
                     continue;

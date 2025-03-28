@@ -136,8 +136,6 @@ internal class AnalyticsCommand : ICommand {
     private void ShowCommandesClientParNationaliteEtPeriode() {
         string email = AnsiConsole.Ask<string>("Client email:");
         string nat = AnsiConsole.Ask<string>("Dish nationality (leave empty for all):");
-        string from = AnsiConsole.Ask<string>("Start date (YYYY-MM-DD):");
-        string to = AnsiConsole.Ask<string>("End date (YYYY-MM-DD):");
 
         string query = @"
             SELECT c.commande_id, c.date_commande, p.nationalite, p.type_plat, p.prix_par_personne, c.quantite
@@ -160,8 +158,6 @@ internal class AnalyticsCommand : ICommand {
 
         using var cmd = new MySqlCommand(query, _sqlService.GetConnection());
         cmd.Parameters.AddWithValue("@email", email);
-        cmd.Parameters.AddWithValue("@from", from);
-        cmd.Parameters.AddWithValue("@to", to);
         if (!string.IsNullOrWhiteSpace(nat))
             cmd.Parameters.AddWithValue("@nat", nat);
 
