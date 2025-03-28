@@ -6,20 +6,23 @@ namespace ParisShell.Commands;
 internal class HelpCommand : ICommand {
     public string Name => "help";
 
+    private readonly SqlService _sqlService;
     private readonly Session _session;
 
-    public HelpCommand(Session session) {
+    public HelpCommand(SqlService sqlService, Session session) {
+        _sqlService = sqlService;
         _session = session;
     }
 
     public void Execute(string[] args) {
-        if (!_session.IsAuthenticated) {
-            Shell.PrintWarning("You must be logged in to access contextual help.");
+        if (!_sqlService.IsConnected) {
+            Shell.PrintWarning("You must be connected to access contextual help.");
             return;
         }
 
-        var roles = _session.CurrentUser.Roles.Select(r => r.ToUpper()).ToList();
+        var roles = _session.CurrentUser?.Roles?.Select(r => r.ToUpper()).ToList() ?? new List<string>();
         var allCommands = new Dictionary<string, List<string>> {
+            ["ANON"] = new() { "clear", "disconnect", "login" },
             ["ALL"] = new() { "clear", "disconnect", "showtables", "showtable", "logout" },
             ["ADMIN"] = new() { "user add", "user update", "user assign-role", "user list", "analytics" },
             ["BOZO"] = new() { "user add", "user update", "user assign-role", "user list", "analytics" },
@@ -32,22 +35,28 @@ internal class HelpCommand : ICommand {
             .AddColumn("[deeppink4_2 bold]Available Commands[/]")
             .AddColumn("[white]Description[/]");
 
-        // Always accessible
-        foreach (var cmd in allCommands["ALL"])
-            table.AddRow($"[white]{cmd}[/]", GetCommandDescription(cmd));
+        if (!_session.IsAuthenticated) {
+            foreach (var cmd in allCommands["ANON"])
+                table.AddRow($"[white]{cmd}[/]", GetCommandDescription(cmd));
+        }
+        else {
+            // Always accessible
+            foreach (var cmd in allCommands["ALL"])
+                table.AddRow($"[white]{cmd}[/]", GetCommandDescription(cmd));
 
-        // Role-specific
-        foreach (var role in roles) {
-            if (allCommands.ContainsKey(role)) {
-                foreach (var cmd in allCommands[role])
-                    table.AddRow($"[green]{cmd}[/]", GetCommandDescription(cmd));
+            // Role-specific
+            foreach (var role in roles) {
+                if (allCommands.ContainsKey(role)) {
+                    foreach (var cmd in allCommands[role])
+                        table.AddRow($"[green]{cmd}[/]", GetCommandDescription(cmd));
+                }
             }
         }
-
         AnsiConsole.Write(table);
     }
 
     private string GetCommandDescription(string cmd) => cmd switch {
+        "login" => "Can login to an user account",
         "clear" => "Clears the screen.",
         "disconnect" => "Disconnects from the MySQL server.",
         "showtables" => "Lists accessible tables based on your role.",
