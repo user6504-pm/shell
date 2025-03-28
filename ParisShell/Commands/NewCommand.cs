@@ -21,7 +21,20 @@ namespace ParisShell.Commands
 
         public void Execute(string[] args)
         {
+            if (!_session.IsAuthenticated)
+            {
+                Shell.PrintError("You must be logged to order");
+                return;
+            }
+
+            if (!_session.IsInRole("CLIENT"))
+            {
+                AnsiConsole.MarkupLine("You must be a client to order");
+                return;
+            }
             AnsiConsole.Clear();
+            AnsiConsole.MarkupLine("[green]Bienvenue dans l'espace de commande ![/]");
+            AnsiConsole.MarkupLine("[blue]Voici la liste des commandes disponibles :[/]");
         }
     }
 }
