@@ -54,7 +54,7 @@ namespace ParisShell.Graph
                 .Start("Creating graph...", ctx => {
                     try
                     {
-                        ctx.Spinner(Spinner.Known.Dots4);
+                        ctx.Spinner(Spinner.Known.Flip);
                         ctx.SpinnerStyle(Style.Parse("green"));
                         graphe.AfficherGraphique(nomFichier, 1200);
                         Shell.PrintSucces("Graph created successfully.");
