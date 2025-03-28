@@ -26,6 +26,8 @@ namespace ParisShell {
             commands["logout"] = args => new LogoutCommand(_session).Execute(args);
             commands["tuto"] = args => new TutoCommand().Execute(args);
             commands["graph"] = args => new GraphCommand(_sqlService).Execute(args);
+            commands["help"] = args => new HelpCommand(_session).Execute(args);
+
         }
 
         public void Run() {

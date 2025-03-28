@@ -35,7 +35,7 @@ namespace ParisShell.Commands {
             ConfirmStep("Visible tables displayed successfully!");
 
 
-            WaitFor("Step 5 - Learn what you can do", "A command [green]help[/] can be done. It will list all commands available for your current role.", expected: "");
+            WaitFor("Step 5 - Learn what you can do", "A command [green]help[/] can be done. It will list all commands available for your current role.", expected: "help");
             AnsiConsole.MarkupLine("For example, an [bold]admin[/] can manage users, roles, analytics, and database info.");
             AnsiConsole.MarkupLine("A [bold]cuisinier[/] can see dishes, orders, stats, and sales.");
             AnsiConsole.MarkupLine("A [bold]client[/] can see their orders and evaluate dishes.");
@@ -44,7 +44,8 @@ namespace ParisShell.Commands {
             ConfirmStep("You're ready to use [green]help[/] as soon as login in the real program.");
 
 
-            AnsiConsole.MarkupLine("\n[bold green]Thanks for following the tutorial![/] You can type [blue]help[/] anytime.");
+            ConfirmStep("\n[bold green]Thanks for following the tutorial![/] You can type [blue]help[/] anytime.");
+            AnsiConsole.Clear();
         }
 
         private void WaitFor(string stepTitle, string instruction, string expected) {

@@ -1,0 +1,67 @@
+﻿using Spectre.Console;
+using ParisShell.Services;
+
+namespace ParisShell.Commands;
+
+internal class HelpCommand : ICommand {
+    public string Name => "help";
+
+    private readonly Session _session;
+
+    public HelpCommand(Session session) {
+        _session = session;
+    }
+
+    public void Execute(string[] args) {
+        if (!_session.IsAuthenticated) {
+            Shell.PrintWarning("You must be logged in to access contextual help.");
+            return;
+        }
+
+        var roles = _session.CurrentUser.Roles.Select(r => r.ToUpper()).ToList();
+        var allCommands = new Dictionary<string, List<string>> {
+            ["ALL"] = new() { "clear", "disconnect", "showtables", "showtable", "logout" },
+            ["ADMIN"] = new() { "user add", "user update", "user assign-role", "user list", "analytics" },
+            ["BOZO"] = new() { "user list", "analytics" },
+            ["CUISINIER"] = new() { "cuisinier clients", "cuisinier stats", "cuisinier platdujour", "cuisinier ventes" },
+            ["CLIENT"] = new() { "showtable", "showtables" }
+        };
+
+        var table = new Table()
+            .Border(TableBorder.Rounded)
+            .AddColumn("[deeppink4_2 bold]Available Commands[/]")
+            .AddColumn("[grey]Description[/]");
+
+        // Always accessible
+        foreach (var cmd in allCommands["ALL"])
+            table.AddRow($"[white]{cmd}[/]", GetCommandDescription(cmd));
+
+        // Role-specific
+        foreach (var role in roles) {
+            if (allCommands.ContainsKey(role)) {
+                foreach (var cmd in allCommands[role])
+                    table.AddRow($"[green]{cmd}[/]", GetCommandDescription(cmd));
+            }
+        }
+
+        AnsiConsole.Write(table);
+    }
+
+    private string GetCommandDescription(string cmd) => cmd switch {
+        "clear" => "Clears the screen.",
+        "disconnect" => "Disconnects from the MySQL server.",
+        "showtables" => "Lists accessible tables based on your role.",
+        "showtable" => "Displays the content of a table.",
+        "logout" => "Logs out from the current user.",
+        "user add" => "Add a new user (admin only).",
+        "user update" => "Update a user's info.",
+        "user assign-role" => "Assign a role to a user.",
+        "user list" => "List users and sort them.",
+        "analytics" => "Show data analysis: orders, averages, client stats.",
+        "cuisinier clients" => "List clients served by this chef.",
+        "cuisinier stats" => "View dish statistics.",
+        "cuisinier platdujour" => "Display today’s dish.",
+        "cuisinier ventes" => "Show total sales by dish.",
+        _ => "No description available."
+    };
+}
