@@ -152,6 +152,10 @@ namespace ParisShell.Commands {
                         ctx.Status("Importing users...");
                         ImportUser.ImportUtilisateursMySql("../../../../user.xlsx", maConnexion);
 
+                        ctx.Status("Importing dishes...");
+                        ImportDishes.ImportDishesSQL("../../../../plats_simules.xlsx",maConnexion); 
+                    
+
                         Shell.PrintSucces("Excel data imported successfully.");
                     }
                     catch (Exception ex) {

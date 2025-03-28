@@ -12,23 +12,8 @@ public class ImportDishes
         FileInfo fichier = new FileInfo(cheminExcel);
         ExcelPackage package = new ExcelPackage(fichier);
 
-        if (package.Workbook.Worksheets.Count == 0)
-        {
-            Console.WriteLine("❌ ERREUR : Aucune feuille dans le fichier Excel.");
-            return;
-        }
-
         ExcelWorksheet feuille = package.Workbook.Worksheets[0];
-
-        if (feuille == null)
-        {
-            Console.WriteLine("❌ ERREUR : La feuille est null.");
-            return;
-        }
-
         int nbLignes = feuille.Dimension.End.Row;
-
-        // 🔍 Récupérer les cuisiniers
         List<int> cuisiniers = new List<int>();
         MySqlCommand cmd = new MySqlCommand(@"
             SELECT ur.user_id FROM user_roles ur
@@ -43,19 +28,16 @@ public class ImportDishes
         reader.Close();
         cmd.Dispose();
 
-        if (cuisiniers.Count == 0)
-        {
-            Console.WriteLine("❌ Aucun cuisinier trouvé.");
-            return;
-        }
 
         Random rand = new Random();
         int ligne = 2;
+        int indexCuisinier = 0;
 
-        while (ligne <= nbLignes)
+        while (ligne <= nbLignes && indexCuisinier < cuisiniers.Count)
         {
-            int cuisinierId = cuisiniers[rand.Next(cuisiniers.Count)];
+            int cuisinierId = cuisiniers[indexCuisinier];
             int nbPlats = rand.Next(1, 4); // 1 à 3 plats
+            indexCuisinier++;
 
             for (int i = 0; i < nbPlats && ligne <= nbLignes; i++, ligne++)
             {
@@ -63,18 +45,18 @@ public class ImportDishes
                 {
                     string typePlat = feuille.Cells[ligne, 2].Text;
                     int nbPersonnes = int.Parse(feuille.Cells[ligne, 3].Text);
-                    DateTime fabrication = DateTime.Parse(feuille.Cells[ligne, 4].Text);
-                    DateTime peremption = DateTime.Parse(feuille.Cells[ligne, 5].Text);
                     decimal prix = decimal.Parse(feuille.Cells[ligne, 6].Text, CultureInfo.InvariantCulture);
+                    DateTime fabrication = feuille.Cells[ligne, 4].GetValue<DateTime>();
+                    DateTime peremption = feuille.Cells[ligne, 5].GetValue<DateTime>();
                     string nationalite = feuille.Cells[ligne, 7].Text;
                     string regime = feuille.Cells[ligne, 8].Text;
                     string ingredients = feuille.Cells[ligne, 9].Text;
                     string photo = feuille.Cells[ligne, 10].Text;
 
                     string query = @"INSERT INTO plats 
-                    (user_id, type_plat, nb_personnes, date_fabrication, date_peremption, 
-                    prix_par_personne, nationalite, regime_alimentaire, ingredients, photo)
-                    VALUES (@uid, @type, @nb, @fab, @per, @prix, @nat, @regime, @ing, @photo);";
+                (user_id, type_plat, nb_personnes, date_fabrication, date_peremption, 
+                prix_par_personne, nationalite, regime_alimentaire, ingredients, photo)
+                VALUES (@uid, @type, @nb, @fab, @per, @prix, @nat, @regime, @ing, @photo);";
 
                     MySqlCommand insertCmd = new MySqlCommand(query, maConnexion);
                     insertCmd.Parameters.AddWithValue("@uid", cuisinierId);
@@ -97,7 +79,7 @@ public class ImportDishes
             }
         }
 
+
         package.Dispose();
-        Console.WriteLine("✅ Importation des plats terminée.");
     }
 }
