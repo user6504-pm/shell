@@ -22,7 +22,7 @@ internal class HelpCommand : ICommand {
         var allCommands = new Dictionary<string, List<string>> {
             ["ALL"] = new() { "clear", "disconnect", "showtables", "showtable", "logout" },
             ["ADMIN"] = new() { "user add", "user update", "user assign-role", "user list", "analytics" },
-            ["BOZO"] = new() { "user list", "analytics" },
+            ["BOZO"] = new() { "user add", "user update", "user assign-role", "user list", "analytics" },
             ["CUISINIER"] = new() { "cuisinier clients", "cuisinier stats", "cuisinier platdujour", "cuisinier ventes" },
             ["CLIENT"] = new() { "showtable", "showtables" }
         };
@@ -30,7 +30,7 @@ internal class HelpCommand : ICommand {
         var table = new Table()
             .Border(TableBorder.Rounded)
             .AddColumn("[deeppink4_2 bold]Available Commands[/]")
-            .AddColumn("[grey]Description[/]");
+            .AddColumn("[white]Description[/]");
 
         // Always accessible
         foreach (var cmd in allCommands["ALL"])
