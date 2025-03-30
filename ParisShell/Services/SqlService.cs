@@ -54,11 +54,14 @@ namespace ParisShell.Services
             try
             {
                 using var cmd = new MySqlCommand(sql, _connection);
+                if(parameters != null)
                 foreach (var param in parameters)
                     cmd.Parameters.AddWithValue(param.Key, param.Value);
 
                 using var reader = cmd.ExecuteReader();
-                if (!IsConnected) {
+
+                if (!IsConnected)
+                {
                     Shell.PrintError("Not connected to a database.");
                     return;
                 }

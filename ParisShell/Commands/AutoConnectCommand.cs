@@ -43,7 +43,7 @@ namespace ParisShell.Commands {
                 PORT = "3306",
                 DATABASE = "livininparis_219",
                 UID = "root",
-                PASSWORD = "root"
+                PASSWORD = "Gandalf"
             };
 
             if (!_sqlService.Connect(config)) {

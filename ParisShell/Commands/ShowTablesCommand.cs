@@ -19,9 +19,20 @@ namespace ParisShell.Commands {
                 Shell.PrintError("You must be connected to a database.");
                 return;
             }
+            if (!_session.IsAuthenticated)
+            {
+                Shell.PrintError("You must be logged in to view accessible tables.");
+                return;
+            }
+
 
             if (_session.IsInRole("BOZO"))
-                _sqlService.ExecuteAndDisplay($"SHOW TABLES");
+                _sqlService.ExecuteAndDisplay(@"
+                    SELECT table_name AS 'Table' 
+                    FROM information_schema.tables 
+                    WHERE table_schema = 'Livininparis_219'
+                ");
+
             else
                 DisplayRoleTables();
         }
