@@ -49,18 +49,19 @@ namespace ParisShell.Services
             }
         }
 
-        public void ExecuteAndDisplay(string sql)
+        public void ExecuteAndDisplay(string sql, Dictionary<string, object> parameters = null)
         {
-            if (!IsConnected)
-            {
-                Shell.PrintError("Not connected to a database.");
-                return;
-            }
-
             try
             {
                 using var cmd = new MySqlCommand(sql, _connection);
+                foreach (var param in parameters)
+                    cmd.Parameters.AddWithValue(param.Key, param.Value);
+
                 using var reader = cmd.ExecuteReader();
+                if (!IsConnected) {
+                    Shell.PrintError("Not connected to a database.");
+                    return;
+                }
 
                 if (!reader.HasRows)
                 {

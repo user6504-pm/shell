@@ -134,7 +134,8 @@ internal class UserCommand : ICommand {
             AddClient(userId);
     }
 
-    private void ListUsers() {
+    private void ListUsers()
+    {
         string sort = AnsiConsole.Prompt(
             new SelectionPrompt<string>()
                 .Title("Sort by:")
@@ -142,52 +143,41 @@ internal class UserCommand : ICommand {
 
         string query;
 
-        if (sort == "Total purchases") {
+        if (sort == "Total purchases")
+        {
             query = @"
-            SELECT u.user_id, u.nom, u.prenom, u.adresse, u.email,
-                   IFNULL(SUM(p.prix_par_personne * c.quantite), 0) AS total
-            FROM users u
-            LEFT JOIN commandes c ON u.user_id = c.client_id
-            LEFT JOIN plats p ON c.plat_id = p.plat_id
-            GROUP BY u.user_id, u.nom, u.prenom, u.adresse, u.email
-            ORDER BY total DESC";
+        SELECT u.user_id AS 'ID',
+               u.nom AS 'Last Name',
+               u.prenom AS 'First Name',
+               u.adresse AS 'Address',
+               u.email AS 'Email',
+               CONCAT(IFNULL(SUM(p.prix_par_personne * c.quantite), 0), '€') AS 'Total Amount'
+        FROM users u
+        LEFT JOIN commandes c ON u.user_id = c.client_id
+        LEFT JOIN plats p ON c.plat_id = p.plat_id
+        GROUP BY u.user_id, u.nom, u.prenom, u.adresse, u.email
+        ORDER BY SUM(p.prix_par_personne * c.quantite) DESC";
         }
-        else {
+        else
+        {
             string orderColumn = sort == "Address" ? "u.adresse" : "u.nom";
             query = $@"
-            SELECT u.user_id, u.nom, u.prenom, u.adresse, u.email,
-                   IFNULL((
-                       SELECT SUM(p.prix_par_personne * c.quantite)
-                       FROM commandes c
-                       JOIN plats p ON c.plat_id = p.plat_id
-                       WHERE c.client_id = u.user_id
-                   ), 0) AS total
-            FROM users u
-            ORDER BY {orderColumn} ASC";
+        SELECT u.user_id AS 'ID',
+               u.nom AS 'Last Name',
+               u.prenom AS 'First Name',
+               u.adresse AS 'Address',
+               u.email AS 'Email',
+               CONCAT(IFNULL((
+                   SELECT SUM(p.prix_par_personne * c.quantite)
+                   FROM commandes c
+                   JOIN plats p ON c.plat_id = p.plat_id
+                   WHERE c.client_id = u.user_id
+               ), 0), '€') AS 'Total Amount'
+        FROM users u
+        ORDER BY {orderColumn} ASC";
         }
 
-        var table = new Table().Border(TableBorder.Rounded)
-            .AddColumn("ID")
-            .AddColumn("Last Name")
-            .AddColumn("First Name")
-            .AddColumn("Address")
-            .AddColumn("Email")
-            .AddColumn("Total Amount");
-
-        using var cmd = new MySqlCommand(query, _sqlService.GetConnection());
-        using var reader = cmd.ExecuteReader();
-        while (reader.Read()) {
-            table.AddRow(
-                reader["user_id"].ToString(),
-                reader["nom"].ToString(),
-                reader["prenom"].ToString(),
-                reader["adresse"].ToString(),
-                reader["email"].ToString(),
-                $"{reader["total"]:0.00}€"
-            );
-        }
-
-        AnsiConsole.Write(table);
+        _sqlService.ExecuteAndDisplay(query);
     }
 
     private string SelectRole() {
@@ -225,14 +215,15 @@ internal class UserCommand : ICommand {
         cmd.Parameters.AddWithValue("@type", type);
         cmd.ExecuteNonQuery();
     }
-    private void GetUserId() {
+    private void GetUserId()
+    {
         var nom = Ask("Last name");
         var prenom = Ask("First name");
 
         string query = @"
-        SELECT user_id, email
-        FROM users
-        WHERE nom LIKE @n AND prenom LIKE @p";
+    SELECT user_id AS 'User ID', email AS 'Email'
+    FROM users
+    WHERE nom LIKE @n AND prenom LIKE @p";
 
         using var cmd = new MySqlCommand(query, _sqlService.GetConnection());
         cmd.Parameters.AddWithValue("@n", $"%{nom}%");
@@ -240,33 +231,31 @@ internal class UserCommand : ICommand {
 
         using var reader = cmd.ExecuteReader();
 
-        var table = new Table().Border(TableBorder.Rounded)
-            .AddColumn("User ID")
-            .AddColumn("Email");
-
-        int count = 0;
+        var results = new List<(string Id, string Email)>();
         while (reader.Read())
         {
-            table.AddRow(
-                reader["user_id"].ToString(),
-                reader["email"].ToString()
-            );
-            count++;
+            results.Add((reader["User ID"].ToString(), reader["Email"].ToString()));
         }
 
-        if (count == 0)
+        reader.Close();
+
+        if (results.Count == 0)
         {
             Shell.PrintWarning("No user found.");
         }
-        else if (count > 10)
+        else if (results.Count > 10)
         {
             Shell.PrintWarning("Too many results. Please refine your search.");
         }
         else
         {
-            AnsiConsole.Write(table);
+            _sqlService.ExecuteAndDisplay(query, new Dictionary<string, object> {
+            { "@n", $"%{nom}%" },
+            { "@p", $"%{prenom}%" }
+        });
         }
     }
+
     private bool UserExists(int userId)
     {
         using var cmd = new MySqlCommand("SELECT COUNT(*) FROM users WHERE user_id = @id", _sqlService.GetConnection());

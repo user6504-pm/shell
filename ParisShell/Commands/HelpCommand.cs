@@ -9,6 +9,8 @@ internal class HelpCommand : ICommand {
     private readonly SqlService _sqlService;
     private readonly Session _session;
 
+
+
     public HelpCommand(SqlService sqlService, Session session) {
         _sqlService = sqlService;
         _session = session;

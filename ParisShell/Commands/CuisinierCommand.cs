@@ -2,29 +2,36 @@
 using MySql.Data.MySqlClient;
 using ParisShell.Services;
 
-namespace ParisShell.Commands {
-    internal class CuisinierCommand : ICommand {
+namespace ParisShell.Commands
+{
+    internal class CuisinierCommand : ICommand
+    {
         public string Name => "cuisinier";
         private readonly SqlService _sqlService;
         private readonly Session _session;
 
-        public CuisinierCommand(SqlService sqlService, Session session) {
+        public CuisinierCommand(SqlService sqlService, Session session)
+        {
             _sqlService = sqlService;
             _session = session;
         }
 
-        public void Execute(string[] args) {
-            if (!_session.IsAuthenticated || !_session.IsInRole("CUISINIER")) {
+        public void Execute(string[] args)
+        {
+            if (!_session.IsAuthenticated || !_session.IsInRole("CUISINIER"))
+            {
                 Shell.PrintError("Access restricted to cuisiniers only.");
                 return;
             }
 
-            if (args.Length == 0) {
+            if (args.Length == 0)
+            {
                 Shell.PrintWarning("Usage: cuisinier [clients|stats|platdujour|ventes]");
                 return;
             }
 
-            switch (args[0]) {
+            switch (args[0])
+            {
                 case "clients":
                     ShowClients();
                     break;
@@ -43,18 +50,25 @@ namespace ParisShell.Commands {
             }
         }
 
-        private void ShowClients() {
+        private void ShowClients()
+        {
             var filter = AnsiConsole.Prompt(
                 new SelectionPrompt<string>()
                     .Title("View served clients:")
                     .AddChoices("Since beginning", "By date range"));
 
             string dateCondition = "";
+            var parameters = new Dictionary<string, object> {
+                { "@_id", _session.CurrentUser!.Id }
+            };
 
-            if (filter == "By date range") {
+            if (filter == "By date range")
+            {
                 var from = AnsiConsole.Ask<string>("Start date (YYYY-MM-DD):");
                 var to = AnsiConsole.Ask<string>("End date (YYYY-MM-DD):");
-                dateCondition = $"AND c.date_commande BETWEEN '{from}' AND '{to}'";
+                dateCondition = "AND c.date_commande BETWEEN @from AND @to";
+                parameters["@from"] = from;
+                parameters["@to"] = to;
             }
 
             string query = $@"
@@ -66,119 +80,59 @@ namespace ParisShell.Commands {
                 WHERE p.user_id = @_id {dateCondition}
                 ORDER BY u.nom ASC";
 
-            var table = new Table().Border(TableBorder.Rounded)
-                .AddColumn("Last Name").AddColumn("First Name").AddColumn("Email");
-
-            using var cmd = new MySqlCommand(query, _sqlService.GetConnection());
-            cmd.Parameters.AddWithValue("@_id", _session.CurrentUser!.Id);
-            using var reader = cmd.ExecuteReader();
-
-            if (!reader.HasRows) {
-                Shell.PrintWarning("No clients found.");
-                return;
-            }
-
-            while (reader.Read()) {
-                table.AddRow(reader["nom"].ToString(), reader["prenom"].ToString(), reader["email"].ToString());
-            }
-
-            AnsiConsole.Write(table);
+            _sqlService.ExecuteAndDisplay(query, parameters);
         }
 
-        private void ShowPlatsStats() {
-            var table = new Table().Border(TableBorder.Rounded)
-                .AddColumn("Dish Type")
-                .AddColumn("Count");
-
-            using var cmd = new MySqlCommand(@"
-                SELECT type_plat, COUNT(*) AS nb
+        private void ShowPlatsStats()
+        {
+            string query = @"
+                SELECT type_plat AS 'Dish Type', COUNT(*) AS 'Count'
                 FROM plats
                 WHERE user_id = @_id
                 GROUP BY type_plat
-                ORDER BY nb DESC", _sqlService.GetConnection());
+                ORDER BY Count DESC";
 
-            cmd.Parameters.AddWithValue("@_id", _session.CurrentUser!.Id);
-            using var reader = cmd.ExecuteReader();
+            var parameters = new Dictionary<string, object> {
+                { "@_id", _session.CurrentUser!.Id }
+            };
 
-            if (!reader.HasRows) {
-                Shell.PrintWarning("No dishes found.");
-                return;
-            }
-
-            while (reader.Read()) {
-                table.AddRow(reader["type_plat"].ToString(), reader["nb"].ToString());
-            }
-
-            AnsiConsole.Write(table);
+            _sqlService.ExecuteAndDisplay(query, parameters);
         }
 
-        private void ShowPlatDuJour() {
+        private void ShowPlatDuJour()
+        {
             string query = @"
-                SELECT plat_id, type_plat, nb_personnes, prix_par_personne
+                SELECT plat_id AS 'ID', type_plat AS 'Type',
+                       nb_personnes AS 'People', 
+                       CONCAT(prix_par_personne, '€') AS 'Price'
                 FROM plats
                 WHERE user_id = @_id AND date_fabrication = CURDATE()";
 
-            var table = new Table().Border(TableBorder.Rounded)
-                .AddColumn("ID").AddColumn("Type")
-                .AddColumn("People").AddColumn("Price");
+            var parameters = new Dictionary<string, object> {
+                { "@_id", _session.CurrentUser!.Id }
+            };
 
-            using var cmd = new MySqlCommand(query, _sqlService.GetConnection());
-            cmd.Parameters.AddWithValue("@_id", _session.CurrentUser!.Id);
-            using var reader = cmd.ExecuteReader();
-
-            if (!reader.HasRows) {
-                Shell.PrintWarning("No dish of the day found.");
-                return;
-            }
-
-            while (reader.Read()) {
-                table.AddRow(
-                    reader["plat_id"].ToString(),
-                    reader["type_plat"].ToString(),
-                    reader["nb_personnes"].ToString(),
-                    reader["prix_par_personne"].ToString() + "€"
-                );
-            }
-
-            AnsiConsole.Write(table);
+            _sqlService.ExecuteAndDisplay(query, parameters);
         }
 
-        private void ShowTotalVentesParPlat() {
+        private void ShowTotalVentesParPlat()
+        {
             string query = @"
-                SELECT p.plat_id, p.type_plat, COUNT(c.commande_id) AS commandes, 
-                       SUM(c.quantite) AS total_qte,
-                       SUM(c.quantite * p.prix_par_personne) AS total_vente
+                SELECT p.plat_id AS 'Dish ID',
+                       p.type_plat AS 'Type',
+                       SUM(c.quantite) AS 'Qty Sold',
+                       CONCAT(FORMAT(SUM(c.quantite * p.prix_par_personne), 2), '€') AS 'Total Sales (€)'
                 FROM commandes c
                 JOIN plats p ON p.plat_id = c.plat_id
                 WHERE p.user_id = @_id
                 GROUP BY p.plat_id, p.type_plat
-                ORDER BY total_vente DESC";
+                ORDER BY SUM(c.quantite * p.prix_par_personne) DESC";
 
-            var table = new Table().Border(TableBorder.Rounded)
-                .AddColumn("Dish ID")
-                .AddColumn("Type")
-                .AddColumn("Qty Sold")
-                .AddColumn("Total Sales (€)");
+            var parameters = new Dictionary<string, object> {
+                { "@_id", _session.CurrentUser!.Id }
+            };
 
-            using var cmd = new MySqlCommand(query, _sqlService.GetConnection());
-            cmd.Parameters.AddWithValue("@_id", _session.CurrentUser!.Id);
-            using var reader = cmd.ExecuteReader();
-
-            if (!reader.HasRows) {
-                Shell.PrintWarning("No sales data found.");
-                return;
-            }
-
-            while (reader.Read()) {
-                table.AddRow(
-                    reader["plat_id"].ToString(),
-                    reader["type_plat"].ToString(),
-                    reader["total_qte"].ToString(),
-                    $"{reader["total_vente"]:0.00}€"
-                );
-            }
-
-            AnsiConsole.Write(table);
+            _sqlService.ExecuteAndDisplay(query, parameters);
         }
     }
 }

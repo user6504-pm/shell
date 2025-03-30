@@ -21,34 +21,9 @@ namespace ParisShell.Commands {
             }
 
             if (_session.IsInRole("BOZO"))
-                DisplayAllTables();
+                _sqlService.ExecuteAndDisplay($"SHOW TABLES");
             else
                 DisplayRoleTables();
-        }
-
-        private void DisplayAllTables() {
-            try {
-                string query = $"SHOW TABLES";
-                using var cmd = new MySqlCommand(query, _sqlService.GetConnection());
-                using var reader = cmd.ExecuteReader();
-
-                if (!reader.HasRows) {
-                    Shell.PrintWarning("No tables found in the database.");
-                    return;
-                }
-
-                var table = new Table().Border(TableBorder.Rounded).Expand();
-                table.AddColumn("[bold]Tables[/]");
-
-                while (reader.Read()) {
-                    table.AddRow(reader[0].ToString());
-                }
-
-                AnsiConsole.Write(table);
-            }
-            catch (Exception ex) {
-                Shell.PrintError($"Failed to retrieve tables: {ex.Message}");
-            }
         }
 
         private void DisplayRoleTables() {
