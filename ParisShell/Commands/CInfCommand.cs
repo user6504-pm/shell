@@ -22,38 +22,78 @@ namespace ParisShell.Commands {
                 return;
             }
 
-            if (!_session.IsInRole("BOZO")) {
-                Shell.PrintError("Permission denied. Only users with role 'BOZO' may access this information.");
-                return;
-            }
-
             DisplayConnectionInfo();
         }
 
-        private void DisplayConnectionInfo() {
-            try {
+        private void DisplayConnectionInfo()
+        {
+            try
+            {
                 var connection = _sqlService.GetConnection();
                 string host = connection.DataSource;
                 string user = GetCurrentUser();
                 string port = ExtractPortFromConnectionString(connection.ConnectionString);
                 string database = GetActiveDatabase();
+                string machine = Environment.MachineName;
+                string os = System.Runtime.InteropServices.RuntimeInformation.OSDescription;
+                string dotnet = Environment.Version.ToString();
+                string userRole = string.Join(", ", _session.CurrentUser?.Roles ?? new List<string>());
 
-                var panel = new Panel($"""
-                    [white]Database[/]: {database}
-                    [white]User[/]: {user}
-                    [white]Host[/]: {host}
-                    [white]Port[/]: {port}
-                    """)
-                    .Header("[bold deeppink4_2]Connection Info[/]")
-                    .Border(BoxBorder.Rounded)
-                    .BorderStyle(new Style(foreground: Color.SlateBlue1));
+                // Your rocket ASCII Art
+                string asciiArt = """
+[bold red]         __
+        / /\
+       / /  \
+      / /    \__________
+     / /      \        /\
+    /_/        \      / /
+ ___\ \      ___\____/_/_
+/____\ \    /___________/\
+\     \ \   \           \ \
+ \     \ \   \____       \ \
+  \     \ \  /   /\       \ \
+   \   / \_\/   / /        \ \
+    \ /        / /__________\/
+     /        / /     /
+    /        / /     /
+   /________/ /\    /
+   \________\/\ \  /
+               \_\/[/]
+""";
 
-                AnsiConsole.Write(panel);
+                // Info Table
+                var infoTable = new Table()
+                    .Border(TableBorder.Rounded)
+                    .AddColumn("[bold deeppink4_2]Information[/]")
+                    .AddColumn("[bold]Value[/]");
+
+                infoTable.AddRow("[bold deeppink4_2]Host[/]", host);
+                infoTable.AddRow("[bold deeppink4_2]Port[/]", port);
+                infoTable.AddRow("[bold deeppink4_2]Database[/]", database);
+                infoTable.AddRow("[bold deeppink4_2]User[/]", user);
+                infoTable.AddRow("[bold deeppink4_2]Role(s)[/]", userRole);
+                infoTable.AddRow("[bold deeppink4_2]Machine[/]", machine);
+                infoTable.AddRow("[bold deeppink4_2]OS[/]", os);
+                infoTable.AddRow("[bold deeppink4_2].NET[/]", dotnet);
+
+                var layout = new Grid();
+                layout.AddColumn();
+                layout.AddColumn();
+                layout.AddRow(new Markup(asciiArt), infoTable);
+
+                AnsiConsole.Write(new Panel(layout)
+                    .Header("[bold deeppink4_2]Session & Connection Info[/]")
+                    .Border(BoxBorder.Double)
+                    .BorderStyle(new Style(foreground: Color.SlateBlue1))
+                    .Padding(1, 1));
             }
-            catch (Exception ex) {
+            catch (Exception ex)
+            {
                 Shell.PrintError($"Failed to retrieve connection info: {ex.Message}");
             }
         }
+
+
 
         private string GetCurrentUser() {
             try {
