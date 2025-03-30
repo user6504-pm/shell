@@ -12,6 +12,8 @@ internal class UserCommand : ICommand {
     private readonly SqlService _sqlService;
     private readonly Session _session;
 
+    private string Ask(string label) => AnsiConsole.Ask<string>($"[blue]{label} :[/]");
+    private string AskSecret(string label) => AnsiConsole.Prompt(new TextPrompt<string>($"[red]{label} :[/]").Secret());
     public UserCommand(SqlService sqlService, Session session) {
         _sqlService = sqlService;
         _session = session;
@@ -87,7 +89,14 @@ internal class UserCommand : ICommand {
             AddClient(userId);
     }
 
-    private void UpdateUser(int id) {
+    private void UpdateUser(int id)
+    {
+        if (!UserExists(id))
+        {
+            Shell.PrintError($"No user found with ID {id}.");
+            return;
+        }
+
         var prenom = Ask("New first name");
         var nom = Ask("New last name");
         var adresse = Ask("New address");
@@ -95,7 +104,7 @@ internal class UserCommand : ICommand {
         var mdp = AskSecret("New password");
 
         using var cmd = new MySqlCommand(@"
-            UPDATE users SET nom=@n, prenom=@p, adresse=@a, telephone=@t, mdp=@m WHERE user_id=@id", _sqlService.GetConnection());
+        UPDATE users SET nom=@n, prenom=@p, adresse=@a, telephone=@t, mdp=@m WHERE user_id=@id", _sqlService.GetConnection());
         cmd.Parameters.AddWithValue("@n", nom);
         cmd.Parameters.AddWithValue("@p", prenom);
         cmd.Parameters.AddWithValue("@a", adresse);
@@ -110,7 +119,14 @@ internal class UserCommand : ICommand {
             Shell.PrintWarning("No update performed.");
     }
 
-    private void AssignRole(int userId) {
+    private void AssignRole(int userId)
+    {
+        if (!UserExists(userId))
+        {
+            Shell.PrintError($"No user found with ID {userId}.");
+            return;
+        }
+
         string role = SelectRole();
         InsertUserRole(userId, role);
         Shell.PrintSucces($"Role '{role}' assigned to user {userId}.");
@@ -174,10 +190,6 @@ internal class UserCommand : ICommand {
         AnsiConsole.Write(table);
     }
 
-
-    private string Ask(string label) => AnsiConsole.Ask<string>($"[blue]{label} :[/]");
-    private string AskSecret(string label) => AnsiConsole.Prompt(new TextPrompt<string>($"[red]{label} :[/]").Secret());
-
     private string SelectRole() {
         var roles = new List<string>();
         using var cmd = new MySqlCommand("SELECT role_name FROM roles", _sqlService.GetConnection());
@@ -220,11 +232,11 @@ internal class UserCommand : ICommand {
         string query = @"
         SELECT user_id, email
         FROM users
-        WHERE nom = @n AND prenom = @p";
+        WHERE nom LIKE @n AND prenom LIKE @p";
 
         using var cmd = new MySqlCommand(query, _sqlService.GetConnection());
-        cmd.Parameters.AddWithValue("@n", nom);
-        cmd.Parameters.AddWithValue("@p", prenom);
+        cmd.Parameters.AddWithValue("@n", $"%{nom}%");
+        cmd.Parameters.AddWithValue("@p", $"%{prenom}%");
 
         using var reader = cmd.ExecuteReader();
 
@@ -233,7 +245,8 @@ internal class UserCommand : ICommand {
             .AddColumn("Email");
 
         int count = 0;
-        while (reader.Read()) {
+        while (reader.Read())
+        {
             table.AddRow(
                 reader["user_id"].ToString(),
                 reader["email"].ToString()
@@ -241,15 +254,24 @@ internal class UserCommand : ICommand {
             count++;
         }
 
-        if (count == 0) {
-            Shell.PrintWarning("No user found with that name.");
+        if (count == 0)
+        {
+            Shell.PrintWarning("No user found.");
         }
-        else {
+        else if (count > 10)
+        {
+            Shell.PrintWarning("Too many results. Please refine your search.");
+        }
+        else
+        {
             AnsiConsole.Write(table);
         }
     }
-
-
-    private void PrintError(string message) =>
-        Shell.PrintError(message);
+    private bool UserExists(int userId)
+    {
+        using var cmd = new MySqlCommand("SELECT COUNT(*) FROM users WHERE user_id = @id", _sqlService.GetConnection());
+        cmd.Parameters.AddWithValue("@id", userId);
+        var result = Convert.ToInt32(cmd.ExecuteScalar());
+        return result > 0;
+    }
 }
