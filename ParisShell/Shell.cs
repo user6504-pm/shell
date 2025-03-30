@@ -29,7 +29,7 @@ namespace ParisShell {
             commands["graph"] = args => new GraphCommand(_sqlService).Execute(args);
             commands["help"] = args => new HelpCommand(_sqlService, _session).Execute(args);
             commands["register"] = args => new RegisterCommand(_sqlService).Execute(args);
-            commands["newc"] = args => new NewCommand(_sqlService, _session).Execute(args);
+            commands["newc"] = args => new NewCCommand(_sqlService, _session).Execute(args);
 
         }
 
