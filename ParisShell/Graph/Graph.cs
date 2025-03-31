@@ -5,6 +5,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using SkiaSharp;
+using ParisShell.Models;
 
 namespace ParisShell.Graph {
     internal class Graph<T> {
@@ -195,258 +196,92 @@ namespace ParisShell.Graph {
             Console.WriteLine($"Degré moyen : {degreMoyen:F2}");
         }
 
-        public void AfficherGraphique(string cheminFichier = "graph.png", int tailleImage = 1080) {
+        public void AfficherGraphique(string cheminFichier = "graph_geo.png", int width = 1200, int height = 800) {
             if (noeuds.Count == 0) {
-                Console.WriteLine("Le graphe est vide, impossible de l'afficher.");
+                Console.WriteLine("Le graphe est vide.");
                 return;
             }
 
-            // *** Définir le rayon max possible d’un nœud (utilisé pour calculer la marge)
-            float rayonMax = 40f;
+            if (!(noeuds.First().Donnees is StationData)) {
+                Shell.PrintError("Graphique géographique seulement possible avec des données StationData.");
+                return;
+            }
 
-            // *** On appelle la fonction de positionnement en lui passant le rayonMax
-            Dictionary<Noeud<T>, SKPoint> positions =
-                CalculerPositionsForceDirected(tailleImage, rayonMax);
+            double minLon = noeuds.Min(n => ((StationData)(object)n.Donnees).Longitude);
+            double maxLon = noeuds.Max(n => ((StationData)(object)n.Donnees).Longitude);
+            double minLat = noeuds.Min(n => ((StationData)(object)n.Donnees).Latitude);
+            double maxLat = noeuds.Max(n => ((StationData)(object)n.Donnees).Latitude);
+            float margin = 40f;
 
-            using var surface = SKSurface.Create(new SKImageInfo(tailleImage, tailleImage));
-            SKCanvas canvas = surface.Canvas;
+            using var bmp = new SKBitmap(width, height);
+            using var canvas = new SKCanvas(bmp);
             canvas.Clear(SKColors.White);
 
-            // Styles pour dessin
-            using var paintNoeud = new SKPaint {
+            var nodePaint = new SKPaint {
+                Color = new SKColor(199, 21, 133), // deeppink4_2 (approximé)
                 Style = SKPaintStyle.Fill,
                 IsAntialias = true
             };
 
-            using var paintLien = new SKPaint {
-                Color = SKColors.Gray,
+            var edgePaint = new SKPaint {
+                Color = new SKColor(106, 90, 205), // SlateBlue1 (approximé)
                 StrokeWidth = 2,
                 IsAntialias = true
             };
 
-            using var paintTexte = new SKPaint {
-                Color = SKColors.Black,
-                IsAntialias = true
-            };
+            SKPoint Convert(StationData s) {
+                float x = (float)((s.Longitude - minLon) / (maxLon - minLon) * (width - 2 * margin)) + margin;
+                float y = (float)((maxLat - s.Latitude) / (maxLat - minLat) * (height - 2 * margin)) + margin;
+                return new SKPoint(x, y);
+            }
 
-            // Définir la police de texte avec taille correcte
-            var font = new SKFont {
-                Size = 16
-            };
+            void DrawArrow(SKCanvas canvas, SKPoint from, SKPoint to, float arrowSize = 10f) {
+                canvas.DrawLine(from, to, edgePaint);
 
-            // Dessiner les liens
+                var angle = Math.Atan2(to.Y - from.Y, to.X - from.X);
+                var sin = (float)Math.Sin(angle);
+                var cos = (float)Math.Cos(angle);
+
+                var p1 = new SKPoint(
+                    to.X - arrowSize * cos + arrowSize / 2 * sin,
+                    to.Y - arrowSize * sin - arrowSize / 2 * cos
+                );
+                var p2 = new SKPoint(
+                    to.X - arrowSize * cos - arrowSize / 2 * sin,
+                    to.Y - arrowSize * sin + arrowSize / 2 * cos
+                );
+
+                var arrowPath = new SKPath();
+                arrowPath.MoveTo(to);
+                arrowPath.LineTo(p1);
+                arrowPath.LineTo(p2);
+                arrowPath.Close();
+
+                canvas.DrawPath(arrowPath, edgePaint);
+            }
+
+            // Dessiner les liens avec flèches (direction : noeud1 -> noeud2)
             foreach (var lien in liens) {
-                var p1 = positions[lien.Noeud1];
-                var p2 = positions[lien.Noeud2];
-                canvas.DrawLine(p1, p2, paintLien);
+                var from = Convert((StationData)(object)lien.Noeud1.Donnees);
+                var to = Convert((StationData)(object)lien.Noeud2.Donnees);
+                DrawArrow(canvas, from, to);
             }
 
             // Dessiner les noeuds
             foreach (var noeud in noeuds) {
-                var pos = positions[noeud];
-
-                // Taille du nœud (déjà plafonnée)
-                float rayonNoeud = CalculerRayon(noeud);
-
-                // Couleur en fonction du degré (exemple simplifié)
-                int degre = liens.Count(l => l.Noeud1.Equals(noeud) || l.Noeud2.Equals(noeud));
-                byte rouge = (byte)Math.Min(255, 50 + degre * 20);
-                paintNoeud.Color = new SKColor(rouge, 100, (byte)(255 - rouge));
-
-                // Dessin du cercle
-                canvas.DrawCircle(pos, rayonNoeud, paintNoeud);
-
-                // Petit offset vertical pour le label
-                float labelOffsetY = -(rayonNoeud + 5f);
-
-                // Dessin du texte
-                canvas.DrawText(
-                    noeud.Donnees.ToString(),
-                    pos.X,
-                    pos.Y + labelOffsetY,
-                    SKTextAlign.Center,
-                    font,
-                    paintTexte
-                );
+                var station = (StationData)(object)noeud.Donnees;
+                var point = Convert(station);
+                canvas.DrawCircle(point, 5, nodePaint);
             }
 
-            // Export de l'image
-            using var image = surface.Snapshot();
+            using var image = SKImage.FromBitmap(bmp);
             using var data = image.Encode(SKEncodedImageFormat.Png, 100);
             using var stream = File.OpenWrite(cheminFichier);
             data.SaveTo(stream);
 
-            Console.WriteLine($"Graphique enregistré sous : {cheminFichier}");
-        }
-
-        // Exemple de calcul du rayon, au besoin (inchangé)
-        private float CalculerRayon(Noeud<T> noeud) {
-            // Calcul basique : 10 + 1.2 * degré, plafonné à 40
-            int degre = liens.Count(l => l.Noeud1.Equals(noeud) || l.Noeud2.Equals(noeud));
-            float rayonNoeud = 10 + degre * 1.2f;
-            return Math.Min(rayonNoeud, 40f);
-        }
-
-        // *** On ajoute un paramètre rayonMax ici
-        private Dictionary<Noeud<T>, SKPoint> CalculerPositionsForceDirected(
-            int tailleImage,
-            float rayonMax,
-            int iterations = 10,
-            float attraction = 0.01f,
-            float repulsion = 3000f,
-            float collisionMargin = 10f
-        ) {
-            Random rand = new Random();
-            Dictionary<Noeud<T>, SKPoint> positions = new();
-            Dictionary<Noeud<T>, SKPoint> vitesses = new();
-
-            // 1) Initialisation des positions & vitesses
-            foreach (var noeud in noeuds) {
-                float x = rand.Next(100, tailleImage - 100);
-                float y = rand.Next(100, tailleImage - 100);
-                positions[noeud] = new SKPoint(x, y);
-                vitesses[noeud] = new SKPoint(0, 0);
-            }
-
-            // 2) Boucle de simulation
-            for (int step = 0; step < iterations; step++) {
-                Dictionary<Noeud<T>, SKPoint> forces = noeuds.ToDictionary(n => n, n => new SKPoint(0, 0));
-
-                // a) Répulsion globale (type Coulomb)
-                foreach (var n1 in noeuds) {
-                    foreach (var n2 in noeuds) {
-                        if (n1.Equals(n2)) continue;
-
-                        var p1 = positions[n1];
-                        var p2 = positions[n2];
-                        float dx = p1.X - p2.X;
-                        float dy = p1.Y - p2.Y;
-                        float dist2 = dx * dx + dy * dy + 0.01f; // évite division par zéro
-                        float force = repulsion / dist2;
-
-                        var f1 = forces[n1];
-                        f1.X += dx * force;
-                        f1.Y += dy * force;
-                        forces[n1] = f1;
-                    }
-                }
-
-                // b) Attraction (liens)
-                foreach (var lien in liens) {
-                    var p1 = positions[lien.Noeud1];
-                    var p2 = positions[lien.Noeud2];
-                    float dx = p2.X - p1.X;
-                    float dy = p2.Y - p1.Y;
-
-                    // Force d’attraction sur nœud1
-                    var f1 = forces[lien.Noeud1];
-                    f1.X += dx * attraction;
-                    f1.Y += dy * attraction;
-                    forces[lien.Noeud1] = f1;
-
-                    // Force d’attraction inverse sur nœud2
-                    var f2 = forces[lien.Noeud2];
-                    f2.X -= dx * attraction;
-                    f2.Y -= dy * attraction;
-                    forces[lien.Noeud2] = f2;
-                }
-
-                // c) Collision (distance minimale = somme rayons + marge)
-                foreach (var n1 in noeuds) {
-                    float r1 = CalculerRayon(n1);
-                    foreach (var n2 in noeuds) {
-                        if (n1.Equals(n2)) continue;
-
-                        float r2 = CalculerRayon(n2);
-                        float minDist = r1 + r2 + collisionMargin;
-
-                        var p1 = positions[n1];
-                        var p2 = positions[n2];
-                        float dx = p1.X - p2.X;
-                        float dy = p1.Y - p2.Y;
-                        float dist = (float)Math.Sqrt(dx * dx + dy * dy) + 0.01f;
-
-                        if (dist < minDist) {
-                            // Chevauchement
-                            float overlap = minDist - dist;
-                            float collisionForce = overlap * 2f;
-
-                            var f1 = forces[n1];
-                            f1.X += (dx / dist) * collisionForce;
-                            f1.Y += (dy / dist) * collisionForce;
-                            forces[n1] = f1;
-
-                            var f2 = forces[n2];
-                            f2.X -= (dx / dist) * collisionForce;
-                            f2.Y -= (dy / dist) * collisionForce;
-                            forces[n2] = f2;
-                        }
-                    }
-                }
-
-                // d) Mise à jour des positions (avec amortissement)
-                float damping = 0.85f;
-                foreach (var noeud in noeuds) {
-                    var f = forces[noeud];
-                    var v = vitesses[noeud];
-
-                    // On ajoute la force à la vitesse, puis on amortit
-                    v.X = (v.X + f.X) * damping;
-                    v.Y = (v.Y + f.Y) * damping;
-                    vitesses[noeud] = v;
-
-                    // Mise à jour de la position
-                    var p = positions[noeud];
-                    p.X += v.X;
-                    p.Y += v.Y;
-                    positions[noeud] = p;
-                }
-            }
-
-            // 3) Recentrer et mettre à l’échelle
-            // *** On calcule la bounding box en tenant compte du rayonMax
-            float minX = positions.Values.Min(p => p.X) - rayonMax;
-            float maxX = positions.Values.Max(p => p.X) + rayonMax;
-            float minY = positions.Values.Min(p => p.Y) - rayonMax;
-            float maxY = positions.Values.Max(p => p.Y) + rayonMax;
-
-            float largeurGraphe = maxX - minX;
-            float hauteurGraphe = maxY - minY;
-
-            // *** Ajuster la marge pour inclure le rayon au bord
-            float marge = 10f; // marge “supplémentaire”
-
-            // On calcule l’échelle horizontale et verticale
-            float echelleX = (tailleImage - marge * 2) / largeurGraphe;
-            float echelleY = (tailleImage - marge * 2) / hauteurGraphe;
-            float echelle = Math.Min(echelleX, echelleY);
-
-            // *** Soit on garde le zoom 1.2f, soit on le retire :
-            // echelle *= 1.1f; // <-- à commenter/décommenter suivant ton besoin
-
-            // Application de l’échelle et du décalage
-            foreach (var noeud in noeuds) {
-                var p = positions[noeud];
-                p.X = (p.X - minX) * echelle + marge;
-                p.Y = (p.Y - minY) * echelle + marge;
-                positions[noeud] = p;
-            }
-
-            // (Optionnel) “Clamping” pour éviter de déborder (si on veut être 100% sûr)
-            // foreach (var noeud in noeuds) {
-            //    float r = CalculerRayon(noeud);
-
-            //    var p = positions[noeud];
-
-            //    p.X = Math.Clamp(p.X, r + 1, tailleImage - (r + 1));
-            //    p.Y = Math.Clamp(p.Y, r + 1, tailleImage - (r + 1));
-            //    positions[noeud] = p;
-            // }
-
-            return positions;
+            Shell.PrintSucces($"Graphe orienté exporté avec flèches : {cheminFichier}");
         }
 
     }
-
 }
 

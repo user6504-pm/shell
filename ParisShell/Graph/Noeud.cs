@@ -17,5 +17,6 @@ namespace ParisShell.Graph {
         public override string ToString() {
             return $"Noeud[ID={Id}, Donnees={Donnees}]";
         }
+
     }
 }
