@@ -87,7 +87,7 @@ namespace ParisShell.Commands
 
             while (!found)
             {
-                int platIdChoisi = AnsiConsole.Ask<int>("Enter the [green]ID[/] of the dish to order:");
+                int platIdChoisi = AnsiConsole.Ask<int>("Enter the [green]ID[/] of the dish to modify:");
                 int i = 0;
 
                 while (i < plats.Count && !found)
