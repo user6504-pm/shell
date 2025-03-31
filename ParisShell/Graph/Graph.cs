@@ -170,6 +170,11 @@ namespace ParisShell.Graph {
 
         public List<Noeud<T>> DijkstraChemin(Noeud<T> depart, Noeud<T> arrivee)
         {
+            //vérifier si départ est dans le graphe
+            if (depart == arrivee)
+            {
+                return null; // pas de chemin
+            }
             Dictionary<Noeud<T>, int> distances = new Dictionary<Noeud<T>, int>();
             Dictionary<Noeud<T>, Noeud<T>> precedents = new Dictionary<Noeud<T>, Noeud<T>>();
             HashSet<Noeud<T>> visites = new HashSet<Noeud<T>>();
@@ -224,12 +229,17 @@ namespace ParisShell.Graph {
                     }
                 }
             }
+            if (precedents[arrivee] == null && !depart.Equals(arrivee))
+            {
+                return null; // Aucun chemin trouvé
+            }
+
             List<Noeud<T>> chemin = new List<Noeud<T>>();
             for (Noeud<T> noeud = arrivee; noeud != null; noeud = precedents[noeud])
             {
                 chemin.Insert(0, noeud);
             }
-            return chemin;
+            return chemin; //donner la distance
         }
 
         public void ObtenirCaracteristiques() {
