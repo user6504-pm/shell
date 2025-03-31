@@ -26,7 +26,7 @@ namespace ParisShell.Commands
 
             if (args.Length == 0)
             {
-                Shell.PrintWarning("Usage: cuisinier [clients|stats|platdujour|ventes]");
+                Shell.PrintWarning("Usage: cuisinier [clients|stats|dishoftheday|sales|dishes]");
                 return;
             }
 
@@ -43,6 +43,9 @@ namespace ParisShell.Commands
                     break;
                 case "ventes":
                     ShowTotalVentesParPlat();
+                    break;
+                case "dishes":
+                    ShowDishes();
                     break;
                 default:
                     Shell.PrintError("Unknown subcommand.");
@@ -133,6 +136,57 @@ namespace ParisShell.Commands
             };
 
             _sqlService.ExecuteAndDisplay(query, parameters);
+        }
+        private void ShowDishes()
+        {
+            AnsiConsole.Clear();
+            AnsiConsole.MarkupLine("[green]Your dishes :[/]");
+            List<(int Id, string Type, string Nationalite, decimal Prix, int Quantite)> plats = new();
+            MySqlCommand selectCmd = new MySqlCommand(@"
+                SELECT plat_id, type_plat, nationalite, prix_par_personne, quantite
+                FROM plats
+                WHERE user_id = @uid;",
+                    _sqlService.GetConnection());
+
+            selectCmd.Parameters.AddWithValue("@uid", _session.CurrentUser.Id);
+
+            using MySqlDataReader reader = selectCmd.ExecuteReader();
+
+            while (reader.Read())
+            {
+                int id = reader.GetInt32("plat_id");
+                string type = reader.GetString("type_plat");
+                string nat = reader.GetString("nationalite");
+                decimal prix = reader.GetDecimal("prix_par_personne");
+                int quantite = reader.GetInt32("quantite");
+
+                plats.Add((id, type, nat, prix, quantite));
+            }
+
+            selectCmd.Dispose();
+            reader.Close();
+
+            if (plats.Count == 0)
+            {
+                AnsiConsole.MarkupLine("[yellow]You have no dishes at the moment.[/]");
+                return;
+            }
+
+            Table table = new Table().Border(TableBorder.Rounded);
+            table.AddColumns("ID", "Type", "Nationality", "Price", "Quantity");
+
+            foreach ((int id, string type, string nat, decimal prix, int quantite) plat in plats)
+            {
+                table.AddRow(
+                    plat.id.ToString(),
+                    plat.type,
+                    plat.nat,
+                    $"{plat.prix}",
+                    plat.quantite.ToString()
+                );
+            }
+
+            AnsiConsole.Write(table);
         }
     }
 }
