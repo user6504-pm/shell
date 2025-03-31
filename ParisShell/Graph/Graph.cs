@@ -168,6 +168,70 @@ namespace ParisShell.Graph {
             return false;
         }
 
+        public List<Noeud<T>> DijkstraChemin(Noeud<T> depart, Noeud<T> arrivee)
+        {
+            Dictionary<Noeud<T>, int> distances = new Dictionary<Noeud<T>, int>();
+            Dictionary<Noeud<T>, Noeud<T>> precedents = new Dictionary<Noeud<T>, Noeud<T>>();
+            HashSet<Noeud<T>> visites = new HashSet<Noeud<T>>();
+
+            foreach (var noeud in noeuds)
+            {
+                distances[noeud] = int.MaxValue;
+                precedents[noeud] = null;
+            }
+            distances[depart] = 0;
+
+            while (visites.Count < noeuds.Count)
+            {
+                Noeud<T> noeudActuel = null;
+                int distanceMin = int.MaxValue;
+
+                foreach (var noeud in noeuds)
+                {
+                    if (!visites.Contains(noeud) && distances[noeud] < distanceMin)
+                    {
+                        distanceMin = distances[noeud];
+                        noeudActuel = noeud;
+                    }
+                }
+
+                if (noeudActuel == null)
+                    break;
+
+                visites.Add(noeudActuel);
+
+                foreach (var lien in liens)
+                {
+                    if (lien.Noeud1.Equals(noeudActuel))
+                    {
+                        Noeud<T> voisin = lien.Noeud2;
+                        int nouvelleDistance = distances[noeudActuel] + lien.Poids;
+                        if (nouvelleDistance < distances[voisin])
+                        {
+                            distances[voisin] = nouvelleDistance;
+                            precedents[voisin] = noeudActuel;
+                        }
+                    }
+                    else if (lien.Noeud2.Equals(noeudActuel))
+                    {
+                        Noeud<T> voisin = lien.Noeud1;
+                        int nouvelleDistance = distances[noeudActuel] + lien.Poids;
+                        if (nouvelleDistance < distances[voisin])
+                        {
+                            distances[voisin] = nouvelleDistance;
+                            precedents[voisin] = noeudActuel;
+                        }
+                    }
+                }
+            }
+            List<Noeud<T>> chemin = new List<Noeud<T>>();
+            for (Noeud<T> noeud = arrivee; noeud != null; noeud = precedents[noeud])
+            {
+                chemin.Insert(0, noeud);
+            }
+            return chemin;
+        }
+
         public void ObtenirCaracteristiques() {
             int nombreNoeuds = noeuds.Count;
             int nombreLiens = liens.Count;
