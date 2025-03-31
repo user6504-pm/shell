@@ -242,6 +242,63 @@ namespace ParisShell.Graph {
             return chemin; //donner la distance
         }
 
+        public Dictionary<Noeud<T>, int> DijkstraDistances(Noeud<T> depart)
+        {
+            Dictionary<Noeud<T>, int> distances = new Dictionary<Noeud<T>, int>();
+            Dictionary<Noeud<T>, bool> visites = new Dictionary<Noeud<T>, bool>();
+
+            foreach (var noeud in noeuds)
+            {
+                distances[noeud] = int.MaxValue;
+                visites[noeud] = false;
+            }
+            distances[depart] = 0;
+            while (visites.Values.Count(v => !v) > 0)
+            {
+                Noeud<T> noeudActuel = null;
+                int distanceMin = int.MaxValue;
+
+                foreach (var noeud in noeuds)
+                {
+                    if (!visites[noeud] && distances[noeud] < distanceMin)
+                    {
+                        distanceMin = distances[noeud];
+                        noeudActuel = noeud;
+                    }
+                }
+
+                if (noeudActuel == null)
+                {
+                    break;
+                }
+
+                visites[noeudActuel] = true;
+
+                foreach (var lien in liens)
+                {
+                    if (lien.Noeud1.Equals(noeudActuel))
+                    {
+                        Noeud<T> voisin = lien.Noeud2;
+                        int nouvelleDistance = distances[noeudActuel] + lien.Poids;
+                        if (nouvelleDistance < distances[voisin])
+                        {
+                            distances[voisin] = nouvelleDistance;
+                        }
+                    }
+                    else if (lien.Noeud2 == noeudActuel)
+                    {
+                        Noeud<T> voisin = lien.Noeud1;
+                        int nouvelleDistance = distances[noeudActuel] + lien.Poids;
+                        if (nouvelleDistance < distances[voisin])
+                        {
+                            distances[voisin] = nouvelleDistance;
+                        }
+                    }
+                }
+            }
+            return distances;
+        }
+
         public void ObtenirCaracteristiques() {
             int nombreNoeuds = noeuds.Count;
             int nombreLiens = liens.Count;
