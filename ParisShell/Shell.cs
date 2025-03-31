@@ -31,6 +31,7 @@ namespace ParisShell {
             commands["register"] = args => new RegisterCommand(_sqlService).Execute(args);
             commands["newc"] = args => new NewCCommand(_sqlService, _session).Execute(args);
             commands["edit"] = args => new EditCommand(_sqlService, _session).Execute(args);
+            commands["addq"] = args => new AddQCommand(_sqlService, _session).Execute(args);
         }
 
         public void Run() {

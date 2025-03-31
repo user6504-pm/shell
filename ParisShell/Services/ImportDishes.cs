@@ -36,7 +36,7 @@ public class ImportDishes
         while (ligne <= nbLignes && indexCuisinier < cuisiniers.Count)
         {
             int cuisinierId = cuisiniers[indexCuisinier];
-            int nbPlats = rand.Next(1, 4); // 1 à 3 plats
+            int nbPlats = rand.Next(1, 4); 
             indexCuisinier++;
 
             for (int i = 0; i < nbPlats && ligne <= nbLignes; i++, ligne++)
@@ -46,6 +46,7 @@ public class ImportDishes
                     string typePlat = feuille.Cells[ligne, 2].Text;
                     int nbPersonnes = int.Parse(feuille.Cells[ligne, 3].Text);
                     decimal prix = decimal.Parse(feuille.Cells[ligne, 6].Text, CultureInfo.InvariantCulture);
+                    int quantite = rand.Next(1, 7);
                     DateTime fabrication = feuille.Cells[ligne, 4].GetValue<DateTime>();
                     DateTime peremption = feuille.Cells[ligne, 5].GetValue<DateTime>();
                     string nationalite = feuille.Cells[ligne, 7].Text;
@@ -54,14 +55,15 @@ public class ImportDishes
                     string photo = feuille.Cells[ligne, 10].Text;
 
                     string query = @"INSERT INTO plats 
-                (user_id, type_plat, nb_personnes, date_fabrication, date_peremption, 
+                (user_id, type_plat, nb_personnes,quantite, date_fabrication, date_peremption, 
                 prix_par_personne, nationalite, regime_alimentaire, ingredients, photo)
-                VALUES (@uid, @type, @nb, @fab, @per, @prix, @nat, @regime, @ing, @photo);";
+                VALUES (@uid, @type, @nb,@quantite, @fab, @per, @prix, @nat, @regime, @ing, @photo);";
 
                     MySqlCommand insertCmd = new MySqlCommand(query, maConnexion);
                     insertCmd.Parameters.AddWithValue("@uid", cuisinierId);
                     insertCmd.Parameters.AddWithValue("@type", typePlat);
                     insertCmd.Parameters.AddWithValue("@nb", nbPersonnes);
+                    insertCmd.Parameters.AddWithValue("@quantite", quantite);
                     insertCmd.Parameters.AddWithValue("@fab", fabrication);
                     insertCmd.Parameters.AddWithValue("@per", peremption);
                     insertCmd.Parameters.AddWithValue("@prix", prix);
