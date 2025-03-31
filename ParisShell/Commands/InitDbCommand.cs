@@ -85,6 +85,7 @@ namespace ParisShell.Commands {
                     user_id INT NOT NULL,
                     type_plat ENUM('ENTREE','PLAT PRINCIPAL','DESSERT') NOT NULL,
                     nb_personnes INT NOT NULL,
+                    quantite INT,
                     date_fabrication DATE NOT NULL,
                     date_peremption DATE NOT NULL,
                     prix_par_personne DECIMAL(6,2) NOT NULL,
