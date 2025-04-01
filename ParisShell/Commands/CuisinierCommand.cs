@@ -1,6 +1,7 @@
 ﻿using Spectre.Console;
 using MySql.Data.MySqlClient;
 using ParisShell.Services;
+using MySqlX.XDevAPI.CRUD;
 
 namespace ParisShell.Commands
 {
@@ -52,6 +53,9 @@ namespace ParisShell.Commands
                     break;
                 case "addquantity":
                     AddQ();
+                    break;
+                case "remove":
+                    Remove();
                     break;
                 default:
                     Shell.PrintError("Unknown subcommand.");
@@ -324,7 +328,7 @@ namespace ParisShell.Commands
             string nationalite = AnsiConsole.Prompt(
                 new SelectionPrompt<string>()
                     .Title("Select the [green]dish type[/]:")
-                    .AddChoices("Japonaise", "Française", "Indienne", "Chinoise", "Espagnole", "Italienne","Mexicaine", "Thaïlandaise", "Coréenne", "Grecque", "Marocaine", "Vietnamienne", "Turque", "Libanaise"));
+                    .AddChoices("Japonaise", "Française", "Indienne", "Chinoise", "Espagnole", "Italienne", "Mexicaine", "Thaïlandaise", "Coréenne", "Grecque", "Marocaine", "Vietnamienne", "Turque", "Libanaise"));
             decimal prix = AnsiConsole.Ask<decimal>("Enter the [green]price per person[/] (e.g. 12.50):");
             int quantite = AnsiConsole.Ask<int>("Enter the [green]initial quantity[/] of the dish:");
             int nbPersonnes = AnsiConsole.Ask<int>("Enter the [green]number of people[/] the dish serves:");
@@ -335,7 +339,7 @@ namespace ParisShell.Commands
             string regime = AnsiConsole.Prompt(
                 new SelectionPrompt<string>()
                     .Title("Select the [green]dish type[/]:")
-                    .AddChoices("Végan", "Végétarien", "Halal", "Kasher", "Sans gluten", "Sans lactose","Faible en glucides", "Keto", "Paléo"));
+                    .AddChoices("Végan", "Végétarien", "Halal", "Kasher", "Sans gluten", "Sans lactose", "Faible en glucides", "Keto", "Paléo"));
             string ingredients = AnsiConsole.Ask<string>("Enter the [green]ingredients[/] (optional, press Enter to skip):");
             string photo = AnsiConsole.Ask<string>("Enter the [green]photo URL[/] (optional, type Enter to skip):");
 
@@ -370,6 +374,72 @@ namespace ParisShell.Commands
                 Shell.PrintError("Failed to insert dish.");
             }
         }
+        private void Remove()
+        {
+            AnsiConsole.Clear();
+            ShowDishes();
 
+            int platId = -1;
+            bool found = false;
+
+            // Boucle jusqu'à trouver un plat valide
+            while (!found)
+            {
+                int idPlatSaisi = AnsiConsole.Ask<int>("Enter the [red]Dish ID[/] you want to delete:");
+
+                string checkQuery = @"
+            SELECT plat_id 
+            FROM plats 
+            WHERE plat_id = @pid AND user_id = @uid";
+
+                MySqlCommand checkCmd = new MySqlCommand(checkQuery, _sqlService.GetConnection());
+                checkCmd.Parameters.AddWithValue("@pid", idPlatSaisi);
+                checkCmd.Parameters.AddWithValue("@uid", _session.CurrentUser.Id);
+
+                MySqlDataReader reader = checkCmd.ExecuteReader();
+                if (reader.Read())
+                {
+                    platId = reader.GetInt32("plat_id");
+                    found = true;
+                }
+                else
+                {
+                    Shell.PrintError("Invalid dish ID or it does not belong to you. Try again.");
+                }
+
+                reader.Close();
+                checkCmd.Dispose();
+            }
+
+            string confirmation = AnsiConsole.Prompt(
+                new SelectionPrompt<string>()
+                    .Title($"Are you sure you want to delete dish [red]ID {platId}[/] ?")
+                    .AddChoices("Yes", "No")
+            );
+            bool confirm = true;
+            if (confirmation == "No")
+            {
+                AnsiConsole.MarkupLine("[yellow]Deletion aborted by the user.[/]");
+                confirm = false;
+            }
+            if (confirm)
+            {
+                string deleteQuery = @"
+            DELETE FROM plats
+            WHERE plat_id = @pid AND user_id = @uid";
+
+                MySqlCommand deleteCmd = new MySqlCommand(deleteQuery, _sqlService.GetConnection());
+                deleteCmd.Parameters.AddWithValue("@pid", platId);
+                deleteCmd.Parameters.AddWithValue("@uid", _session.CurrentUser.Id);
+
+                deleteCmd.ExecuteNonQuery();
+                deleteCmd.Dispose();
+                AnsiConsole.Clear();
+                AnsiConsole.MarkupLine("[yellow]Dish removed.[/]");
+
+            }
+        }
     }
 }
+
+

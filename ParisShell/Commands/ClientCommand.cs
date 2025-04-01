@@ -254,53 +254,55 @@ namespace ParisShell.Commands
         private void CancelMyOrder()
         {
             ShowMyOrders();
-            int orderId = AnsiConsole.Ask<int>("Enter the [green]Order ID[/] to cancel:");
 
-            string checkQuery = @"
-            SELECT statut, plat_id, quantite 
-            FROM commandes 
-            WHERE commande_id = @oid AND client_id = @cid";
-
-            MySqlCommand checkCmd = new MySqlCommand(checkQuery, _sqlService.GetConnection());
-            checkCmd.Parameters.AddWithValue("@oid", orderId);
-            checkCmd.Parameters.AddWithValue("@cid", _session.CurrentUser!.Id);
-
+            int orderId = -1;
             string statut = null;
             int platId = -1;
             int quantite = 0;
 
-            MySqlDataReader reader = checkCmd.ExecuteReader();
-            if (reader.Read())
+            while (statut == null)
             {
-                statut = reader.GetString("statut");
-                platId = reader.GetInt32("plat_id");
-                quantite = reader.GetInt32("quantite");
-            }
-            reader.Close();
-            checkCmd.Dispose();
+                int saisie = AnsiConsole.Ask<int>("Enter the [green]Order ID[/] to cancel:");
 
-            bool canProceed = true;
+                string checkQuery = @"
+                SELECT statut, plat_id, quantite
+                FROM commandes 
+                WHERE commande_id = @oid AND client_id = @cid";
 
-            if (statut == null)
-            {
-                Shell.PrintError("Order not found or does not belong to you.");
-                canProceed = false;
+                MySqlCommand checkCmd = new MySqlCommand(checkQuery, _sqlService.GetConnection());
+                checkCmd.Parameters.AddWithValue("@oid", saisie);
+                checkCmd.Parameters.AddWithValue("@cid", _session.CurrentUser!.Id);
+
+                MySqlDataReader reader = checkCmd.ExecuteReader();
+                if (reader.Read())
+                {
+                    statut = reader.GetString("statut");
+                    platId = reader.GetInt32("plat_id");
+                    quantite = reader.GetInt32("quantite");
+                    orderId = saisie;
+                }
+                else
+                {
+                    Shell.PrintError("Order not found or does not belong to you. Try again.");
+                }
+
+                reader.Close();
+                checkCmd.Dispose();
             }
-            else if (statut != "EN_COURS")
+            bool confirm = true;
+            if (statut != "EN_COURS")
             {
                 Shell.PrintWarning("Only orders with status EN_COURS can be canceled.");
-                canProceed = false;
+                confirm = false;
             }
-
-            if (canProceed)
+            if (confirm)
             {
-                bool confirm = true;
                 string confirmation = AnsiConsole.Prompt(
                     new SelectionPrompt<string>()
                         .Title("Are you sure you want to cancel this order?")
                         .AddChoices("Yes", "No")
                 );
-
+                
                 if (confirmation == "No")
                 {
                     AnsiConsole.MarkupLine("[yellow]Cancellation aborted by the user.[/]");
@@ -309,9 +311,9 @@ namespace ParisShell.Commands
                 if (confirm)
                 {
                     string updatePlatQuery = @"
-                UPDATE plats 
-                SET quantite = quantite + @qte 
-                WHERE plat_id = @pid";
+                    UPDATE plats 
+                    SET quantite = quantite + @qte 
+                    WHERE plat_id = @pid";
 
                     MySqlCommand updatePlatCmd = new MySqlCommand(updatePlatQuery, _sqlService.GetConnection());
                     updatePlatCmd.Parameters.AddWithValue("@qte", quantite);
@@ -320,21 +322,25 @@ namespace ParisShell.Commands
                     updatePlatCmd.Dispose();
 
                     string cancelQuery = @"
-                UPDATE commandes 
-                SET statut = 'ANNULEE' 
-                WHERE commande_id = @oid";
+                    UPDATE commandes 
+                    SET statut = 'ANNULEE' 
+                    WHERE commande_id = @oid";
 
                     MySqlCommand cancelCmd = new MySqlCommand(cancelQuery, _sqlService.GetConnection());
                     cancelCmd.Parameters.AddWithValue("@oid", orderId);
-                    int affected = cancelCmd.ExecuteNonQuery();
+                    cancelCmd.ExecuteNonQuery();
                     cancelCmd.Dispose();
-
-                    if (affected > 0)
-                        AnsiConsole.MarkupLine("[green]Order successfully canceled.[/]");
-                    else
-                        Shell.PrintError("Failed to cancel the order.");
+                    AnsiConsole.Clear();
+                    AnsiConsole.MarkupLine("[yellow]Cancellation done.[/]");
                 }
+
+
             }
+
+
         }
+
     }
 }
+    
+
