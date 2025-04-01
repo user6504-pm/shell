@@ -1,24 +1,50 @@
-﻿using ParisShell.Services;
-using Spectre.Console;
-using System;
-using System.Collections.Generic;
+﻿using Spectre.Console;
 using MySql.Data.MySqlClient;
+using ParisShell.Services;
+using System.Drawing.Text;
 
 namespace ParisShell.Commands
 {
-    internal class NewCCommand : ICommand
+    internal class ClientCommand : ICommand
     {
-        public string Name => "newc";
+        public string Name => "client";
         private readonly SqlService _sqlService;
         private readonly Session _session;
 
-        public NewCCommand(SqlService sqlService, Session session)
+        public ClientCommand(SqlService sqlService, Session session)
         {
             _sqlService = sqlService;
             _session = session;
         }
 
         public void Execute(string[] args)
+        {
+            if (!_session.IsAuthenticated || !_session.IsInRole("CLIENT"))
+            {
+                Shell.PrintError("Access restricted to clients only.");
+                return;
+            }
+
+            if (args.Length == 0)
+            {
+                Shell.PrintWarning("Usage: client [newc | orders | cancel]");
+                return;
+            }
+
+            switch (args[0])
+            {
+                case "newc":
+                    NewCommand();
+                break;
+                case "orders":
+                    ShowMyOrders(); 
+                break;
+                case "cancel":
+                    CancelMyOrder();
+                break;
+            }
+        }
+        private void NewCommand()
         {
             AnsiConsole.Clear();
 
@@ -152,5 +178,92 @@ namespace ParisShell.Commands
             AnsiConsole.Clear();
             AnsiConsole.MarkupLine($"[green] Order recorded for dish ID {platSelectionne.Id} ({quantiteCommandee} unit(s)).[/]");
         }
+        private void ShowMyOrders()
+        {
+            MySqlCommand cmd = new MySqlCommand(@"
+                SELECT c.commande_id, p.type_plat, p.nationalite,
+               c.quantite, p.prix_par_personne,
+               c.date_commande, c.statut
+                FROM commandes c
+                JOIN plats p ON c.plat_id = p.plat_id
+                WHERE c.client_id = @cid
+                ORDER BY c.date_commande DESC;",
+                _sqlService.GetConnection());
+
+            cmd.Parameters.AddWithValue("@cid", _session.CurrentUser.Id);
+
+            using var reader = cmd.ExecuteReader();
+
+            if (!reader.HasRows)
+            {
+                AnsiConsole.MarkupLine("[yellow]No orders found.[/]");
+                return;
+            }
+
+            var table = new Table().Border(TableBorder.Rounded);
+            table.AddColumns("ID Commande", "Type du plat", "Nationalité", "Quantité", "Prix", "Date", "Statut");
+
+            while (reader.Read())
+            {
+                table.AddRow(
+                    reader["commande_id"].ToString()!,
+                    reader["type_plat"].ToString()!,
+                    reader["nationalite"].ToString()!,
+                    reader["quantite"].ToString()!,
+                    $"{Convert.ToDecimal(reader["prix_par_personne"]):0.00}€",
+                    Convert.ToDateTime(reader["date_commande"]).ToString("yyyy-MM-dd HH:mm"),
+                    reader["statut"].ToString()!
+                );
+            }
+
+            AnsiConsole.Clear();
+            AnsiConsole.MarkupLine("[bold underline green]Vos commandes[/]");
+            AnsiConsole.Write(table);
+        }
+
+        private void CancelMyOrder()
+        {
+            ShowMyOrders();
+            int orderId = AnsiConsole.Ask<int>("Enter the [green]Order ID[/] to cancel:");
+
+            string checkQuery = @"
+            SELECT statut FROM commandes
+            WHERE commande_id = @oid AND client_id = @cid";
+
+            using var checkCmd = new MySqlCommand(checkQuery, _sqlService.GetConnection());
+            checkCmd.Parameters.AddWithValue("@oid", orderId);
+            checkCmd.Parameters.AddWithValue("@cid", _session.CurrentUser!.Id);
+
+            var status = checkCmd.ExecuteScalar();
+
+            if (status == null)
+            {
+                Shell.PrintError("Order not found or does not belong to you.");
+                return;
+            }
+
+            if (status.ToString() != "EN_COURS")
+            {
+                Shell.PrintWarning("Only orders with status EN_COURS can be canceled.");
+                return;
+            }
+
+            string cancelQuery = @"
+            UPDATE commandes
+            SET statut = 'ANNULEE'
+            WHERE commande_id = @oid";
+
+            using var updateCmd = new MySqlCommand(cancelQuery, _sqlService.GetConnection());
+            updateCmd.Parameters.AddWithValue("@oid", orderId);
+
+            int affected = updateCmd.ExecuteNonQuery();
+            if (affected > 0)
+                AnsiConsole.MarkupLine("[green]Order cancelled successfully.[/]");
+            else
+                Shell.PrintError("Failed to cancel the order.");
+        }
+
+
+
     }
 }
