@@ -77,7 +77,7 @@ public class ImportDishes
                 }
                 catch (Exception ex)
                 {
-                    Console.WriteLine($"❌ ERREUR ligne {ligne} : {ex.Message}");
+                    Console.WriteLine($" ERROR line {ligne} : {ex.Message}");
                 }
             }
         }

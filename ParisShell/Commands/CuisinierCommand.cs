@@ -47,6 +47,9 @@ namespace ParisShell.Commands
                 case "dishes":
                     ShowDishes();
                     break;
+                case "addDish":
+                    AddDish();
+                    break;
                 default:
                     Shell.PrintError("Unknown subcommand.");
                     break;
@@ -187,6 +190,11 @@ namespace ParisShell.Commands
             }
 
             AnsiConsole.Write(table);
+
+        }
+        private void AddDish()
+        {
+
         }
     }
 }
