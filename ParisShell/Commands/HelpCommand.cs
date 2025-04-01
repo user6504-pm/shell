@@ -28,7 +28,7 @@ internal class HelpCommand : ICommand {
             ["ALL"] = new() { "clear", "disconnect", "showtables", "showtable", "logout" },
             ["ADMIN"] = new() { "user add", "user update", "user assign-role", "user list", "analytics" },
             ["BOZO"] = new() { "user add", "user update", "user assign-role", "user list", "analytics" },
-            ["CUISINIER"] = new() { "cuisinier clients", "cuisinier stats", "cuisinier platdujour", "cuisinier ventes" },
+            ["CUISINIER"] = new() { "cook clients", "cook stats", "cook dishoftheday", "cook sales","cook dishes","cook newdish" },
             ["CLIENT"] = new() { "showtable", "showtables" }
         };
 
@@ -69,10 +69,12 @@ internal class HelpCommand : ICommand {
         "user assign-role" => "Assign a role to a user.",
         "user list" => "List users and sort them.",
         "analytics" => "Show data analysis: orders, averages, client stats.",
-        "cuisinier clients" => "List clients served by this chef.",
-        "cuisinier stats" => "View dish statistics.",
-        "cuisinier platdujour" => "Display today’s dish.",
-        "cuisinier ventes" => "Show total sales by dish.",
+        "cook clients" => "List clients served by this chef.",
+        "cook stats" => "View dish statistics.",
+        "cook dishoftheday" => "Display today’s dish.",
+        "cook sales" => "Show total sales by dish.",
+        "cook dishes" => "Show total dishes by the cook",
+        "cook newdish " => "Create a new dish for the cook",
         _ => "No description available."
     };
 }
