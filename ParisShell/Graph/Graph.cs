@@ -455,7 +455,7 @@ namespace ParisShell.Graph {
             Console.WriteLine($"Degré moyen : {degreMoyen:F2}");
         }
 
-        public void ExporterSvg(string cheminFichier = "graph_geo.svg", List<StationData> chemin = null, int width = 1920, int height = 1080) {
+        public void ExporterSvg(string cheminFichier = "graph_geo.svg", List<Noeud<T>> chemin = null, int width = 1920, int height = 1080) {
             if (File.Exists(cheminFichier)) File.Delete(cheminFichier);
 
             if (noeuds.Count == 0) {
@@ -562,13 +562,25 @@ namespace ParisShell.Graph {
                 canvas.DrawPath(arrowPath, edgePaint);
             }
 
-            foreach (var lien in liens)
+            HashSet<(object, object)> arcsChemin = new();
+
+            if (chemin != null && chemin.Count >= 2) {
+                for (int i = 0; i < chemin.Count - 1; i++) {
+                    arcsChemin.Add((chemin[i], chemin[i + 1]));
+                }
+            }
+
+            foreach (var lien in liens) {
+                if (arcsChemin.Contains((lien.Noeud1, lien.Noeud2))) continue;
+                if (arcsChemin.Contains((lien.Noeud2, lien.Noeud1))) continue;
                 DrawArrowFromNodeToNode(lien.Noeud1, lien.Noeud2);
+            }
+
 
             if (chemin != null && chemin.Count >= 2) {
                 var highlightPaint = new SKPaint {
                     Color = SKColors.Red,
-                    StrokeWidth = 3,
+                    StrokeWidth = 2,
                     IsAntialias = true
                 };
 
@@ -592,7 +604,7 @@ namespace ParisShell.Graph {
                     canvas.DrawLine(start, end, highlightPaint);
 
                     // Tête de flèche rouge
-                    float arrowSize = 7;
+                    float arrowSize = 9;
                     var angle = Math.Atan2(end.Y - start.Y, end.X - start.X);
                     var sin = (float)Math.Sin(angle);
                     var cos = (float)Math.Cos(angle);
@@ -630,9 +642,12 @@ namespace ParisShell.Graph {
 
                 canvas.DrawCircle(point, radius, nodePaint);
 
-                if (degre >= 10) {
+                bool estExtremite = chemin != null && (noeud.Equals(chemin.First()) || noeud.Equals(chemin.Last()));
+
+                if (degre >= 10 || estExtremite) {
                     canvas.DrawText(station.Nom, point.X + radius + 2, point.Y - 2, textPaint);
                 }
+
             }
 
             Shell.PrintSucces($"Graphe SVG exporté avec flèches : {cheminFichier}");
