@@ -105,79 +105,105 @@ namespace ParisShell.Commands
             }
 
             AnsiConsole.Write(table);
-            int platIdChoisi = AnsiConsole.Ask<int>("Enter the [green]ID[/] of the dish to order:");
+            bool confirm = true;
+            int platIdChoisi = AnsiConsole.Ask<int>("Enter the [green]ID[/] of the dish to order: (type 0 to cancel)");
 
-            (int Id, string Type, string Nationalite, decimal Prix, int Quantite) platSelectionne = default;
-            bool found = false;
-            int i = 0;
-
-            while (i < platsDisponibles.Count && !found)
+            if( platIdChoisi == 0 )
             {
-                (int Id, string Type, string Nationalite, decimal Prix, int Quantite) plat = platsDisponibles[i];
-
-                if (plat.Id == platIdChoisi)
-                {
-                    platSelectionne = plat;
-                    found = true;
-                }
-
-                i++;
+                confirm = false;
             }
-
-            if (!found)
+            if (confirm)
             {
-                Shell.PrintError("Dish not found.");
-                return;
-            }
+                (int Id, string Type, string Nationalite, decimal Prix, int Quantite) platSelectionne = default;
+                bool found = false;
+                int i = 0;
 
-            int quantiteCommandee = 0;
-            bool quantiteValide = false;
-
-            while (!quantiteValide)
-            {
-                quantiteCommandee = AnsiConsole.Ask<int>("Enter the [green]quantity[/] to order:");
-
-                if (quantiteCommandee <= 0)
+                while (i < platsDisponibles.Count && !found)
                 {
-                    Shell.PrintError("Quantity must be greater than 0.");
-                }
-                else if (quantiteCommandee > platSelectionne.Quantite)
-                {
-                    Shell.PrintError("Not enough quantity available for this dish.");
-                }
-                else
-                {
-                    quantiteValide = true;
-                }
-            }
+                    (int Id, string Type, string Nationalite, decimal Prix, int Quantite) plat = platsDisponibles[i];
 
-            MySqlCommand insertCmd = new MySqlCommand(@"
+                    if (plat.Id == platIdChoisi)
+                    {
+                        platSelectionne = plat;
+                        found = true;
+                    }
+
+                    i++;
+                }
+
+                if (!found)
+                {
+                    Shell.PrintError("Dish not found.");
+                    return;
+                }
+
+                int quantiteCommandee = 0;
+                bool quantiteValide = false;
+
+                while (!quantiteValide)
+                {
+                    quantiteCommandee = AnsiConsole.Ask<int>("Enter the [green]quantity[/] to order:");
+
+                    if (quantiteCommandee <= 0)
+                    {
+                        Shell.PrintError("Quantity must be greater than 0.");
+                    }
+                    else if (quantiteCommandee > platSelectionne.Quantite)
+                    {
+                        Shell.PrintError("Not enough quantity available for this dish.");
+                    }
+                    else
+                    {
+                        quantiteValide = true;
+                    }
+                }
+                string confirmation = AnsiConsole.Prompt(
+                    new SelectionPrompt<string>()
+                        .Title("Are you sure you want to order?")
+                        .AddChoices("Yes", "No")
+                );
+                bool conf = true;
+                if (confirmation == "No")
+                {
+                    AnsiConsole.MarkupLine("[yellow]Command aborted by the user.[/]");
+                    confirm = false;
+                }
+                if (conf)
+                {
+                    MySqlCommand insertCmd = new MySqlCommand(@"
                 INSERT INTO commandes (client_id, plat_id, quantite)
                 VALUES (@cid, @pid, @qte);",
                 _sqlService.GetConnection());
 
-            insertCmd.Parameters.AddWithValue("@cid", _session.CurrentUser.Id);
-            insertCmd.Parameters.AddWithValue("@pid", platSelectionne.Id);
-            insertCmd.Parameters.AddWithValue("@qte", quantiteCommandee);
-            insertCmd.ExecuteNonQuery();
-            insertCmd.Dispose();
+                    insertCmd.Parameters.AddWithValue("@cid", _session.CurrentUser.Id);
+                    insertCmd.Parameters.AddWithValue("@pid", platSelectionne.Id);
+                    insertCmd.Parameters.AddWithValue("@qte", quantiteCommandee);
+                    insertCmd.ExecuteNonQuery();
+                    insertCmd.Dispose();
 
-            int nouvelleQuantite = platSelectionne.Quantite - quantiteCommandee;
+                    int nouvelleQuantite = platSelectionne.Quantite - quantiteCommandee;
 
-            MySqlCommand updateCmd = new MySqlCommand(@"
+                    MySqlCommand updateCmd = new MySqlCommand(@"
                 UPDATE plats
                 SET quantite = @newQty
                 WHERE plat_id = @pid;",
-                _sqlService.GetConnection());
+                        _sqlService.GetConnection());
 
-            updateCmd.Parameters.AddWithValue("@newQty", nouvelleQuantite);
-            updateCmd.Parameters.AddWithValue("@pid", platSelectionne.Id);
-            updateCmd.ExecuteNonQuery();
-            updateCmd.Dispose();
+                    updateCmd.Parameters.AddWithValue("@newQty", nouvelleQuantite);
+                    updateCmd.Parameters.AddWithValue("@pid", platSelectionne.Id);
+                    updateCmd.ExecuteNonQuery();
+                    updateCmd.Dispose();
 
-            AnsiConsole.Clear();
-            AnsiConsole.MarkupLine($"[green] Order recorded for dish ID {platSelectionne.Id} ({quantiteCommandee} unit(s)).[/]");
+                    AnsiConsole.Clear();
+                    AnsiConsole.MarkupLine($"[green] Order recorded for dish ID {platSelectionne.Id} ({quantiteCommandee} unit(s)).[/]");
+                }
+
+            }
+
         }
+
+
+
         private void ShowMyOrders()
         {
             MySqlCommand cmd = new MySqlCommand(@"
@@ -194,31 +220,35 @@ namespace ParisShell.Commands
 
             using var reader = cmd.ExecuteReader();
 
-            if (!reader.HasRows)
+            bool hasOrders = reader.HasRows;
+
+            if (!hasOrders)
             {
                 AnsiConsole.MarkupLine("[yellow]No orders found.[/]");
-                return;
             }
 
-            var table = new Table().Border(TableBorder.Rounded);
-            table.AddColumns("ID Commande", "Type du plat", "Nationalité", "Quantité", "Prix", "Date", "Statut");
-
-            while (reader.Read())
+            if (hasOrders)
             {
-                table.AddRow(
-                    reader["commande_id"].ToString()!,
-                    reader["type_plat"].ToString()!,
-                    reader["nationalite"].ToString()!,
-                    reader["quantite"].ToString()!,
-                    $"{Convert.ToDecimal(reader["prix_par_personne"]):0.00}€",
-                    Convert.ToDateTime(reader["date_commande"]).ToString("yyyy-MM-dd HH:mm"),
-                    reader["statut"].ToString()!
-                );
-            }
+                var table = new Table().Border(TableBorder.Rounded);
+                table.AddColumns("ID Commande", "Type du plat", "Nationalité", "Quantité", "Prix", "Date", "Statut");
 
-            AnsiConsole.Clear();
-            AnsiConsole.MarkupLine("[bold underline green]Vos commandes[/]");
-            AnsiConsole.Write(table);
+                while (reader.Read())
+                {
+                    table.AddRow(
+                        reader["commande_id"].ToString()!,
+                        reader["type_plat"].ToString()!,
+                        reader["nationalite"].ToString()!,
+                        reader["quantite"].ToString()!,
+                        $"{Convert.ToDecimal(reader["prix_par_personne"]):0.00}",
+                        Convert.ToDateTime(reader["date_commande"]).ToString("yyyy-MM-dd HH:mm"),
+                        reader["statut"].ToString()!
+                    );
+                }
+
+                AnsiConsole.Clear();
+                AnsiConsole.MarkupLine("[bold underline green]Vos commandes[/]");
+                AnsiConsole.Write(table);
+            }
         }
 
         private void CancelMyOrder()
@@ -227,43 +257,84 @@ namespace ParisShell.Commands
             int orderId = AnsiConsole.Ask<int>("Enter the [green]Order ID[/] to cancel:");
 
             string checkQuery = @"
-            SELECT statut FROM commandes
+            SELECT statut, plat_id, quantite 
+            FROM commandes 
             WHERE commande_id = @oid AND client_id = @cid";
 
-            using var checkCmd = new MySqlCommand(checkQuery, _sqlService.GetConnection());
+            MySqlCommand checkCmd = new MySqlCommand(checkQuery, _sqlService.GetConnection());
             checkCmd.Parameters.AddWithValue("@oid", orderId);
             checkCmd.Parameters.AddWithValue("@cid", _session.CurrentUser!.Id);
 
-            var status = checkCmd.ExecuteScalar();
+            string statut = null;
+            int platId = -1;
+            int quantite = 0;
 
-            if (status == null)
+            MySqlDataReader reader = checkCmd.ExecuteReader();
+            if (reader.Read())
+            {
+                statut = reader.GetString("statut");
+                platId = reader.GetInt32("plat_id");
+                quantite = reader.GetInt32("quantite");
+            }
+            reader.Close();
+            checkCmd.Dispose();
+
+            bool canProceed = true;
+
+            if (statut == null)
             {
                 Shell.PrintError("Order not found or does not belong to you.");
-                return;
+                canProceed = false;
             }
-
-            if (status.ToString() != "EN_COURS")
+            else if (statut != "EN_COURS")
             {
                 Shell.PrintWarning("Only orders with status EN_COURS can be canceled.");
-                return;
+                canProceed = false;
             }
 
-            string cancelQuery = @"
-            UPDATE commandes
-            SET statut = 'ANNULEE'
-            WHERE commande_id = @oid";
+            if (canProceed)
+            {
+                bool confirm = true;
+                string confirmation = AnsiConsole.Prompt(
+                    new SelectionPrompt<string>()
+                        .Title("Are you sure you want to cancel this order?")
+                        .AddChoices("Yes", "No")
+                );
 
-            using var updateCmd = new MySqlCommand(cancelQuery, _sqlService.GetConnection());
-            updateCmd.Parameters.AddWithValue("@oid", orderId);
+                if (confirmation == "No")
+                {
+                    AnsiConsole.MarkupLine("[yellow]Cancellation aborted by the user.[/]");
+                    confirm = false;
+                }
+                if (confirm)
+                {
+                    string updatePlatQuery = @"
+                UPDATE plats 
+                SET quantite = quantite + @qte 
+                WHERE plat_id = @pid";
 
-            int affected = updateCmd.ExecuteNonQuery();
-            if (affected > 0)
-                AnsiConsole.MarkupLine("[green]Order cancelled successfully.[/]");
-            else
-                Shell.PrintError("Failed to cancel the order.");
+                    MySqlCommand updatePlatCmd = new MySqlCommand(updatePlatQuery, _sqlService.GetConnection());
+                    updatePlatCmd.Parameters.AddWithValue("@qte", quantite);
+                    updatePlatCmd.Parameters.AddWithValue("@pid", platId);
+                    updatePlatCmd.ExecuteNonQuery();
+                    updatePlatCmd.Dispose();
+
+                    string cancelQuery = @"
+                UPDATE commandes 
+                SET statut = 'ANNULEE' 
+                WHERE commande_id = @oid";
+
+                    MySqlCommand cancelCmd = new MySqlCommand(cancelQuery, _sqlService.GetConnection());
+                    cancelCmd.Parameters.AddWithValue("@oid", orderId);
+                    int affected = cancelCmd.ExecuteNonQuery();
+                    cancelCmd.Dispose();
+
+                    if (affected > 0)
+                        AnsiConsole.MarkupLine("[green]Order successfully canceled.[/]");
+                    else
+                        Shell.PrintError("Failed to cancel the order.");
+                }
+            }
         }
-
-
-
     }
 }
