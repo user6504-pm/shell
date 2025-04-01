@@ -29,7 +29,7 @@ internal class HelpCommand : ICommand {
             ["ADMIN"] = new() { "user add", "user update", "user assign-role", "user list", "analytics" },
             ["BOZO"] = new() { "user add", "user update", "user assign-role", "user list", "analytics" },
             ["CUISINIER"] = new() { "cook clients", "cook stats", "cook dishoftheday", "cook sales","cook dishes","cook newdish" },
-            ["CLIENT"] = new() { "showtable", "showtables" }
+            ["CLIENT"] = new() { "showtable", "showtables","client newc","client orders","client cancel"}
         };
 
         var table = new Table()
