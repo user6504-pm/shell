@@ -167,10 +167,68 @@ namespace ParisShell.Graph {
 
             return false;
         }
-
-        public List<Noeud<T>> DijkstraChemin(Noeud<T> depart, Noeud<T> arrivee)
+        public Dictionary<Noeud<T>, int> DijkstraDistances(Noeud<T> depart)
         {
             //vérifier si départ est dans le graphe
+            Dictionary<Noeud<T>, int> distances = new Dictionary<Noeud<T>, int>();
+            Dictionary<Noeud<T>, bool> visites = new Dictionary<Noeud<T>, bool>();
+
+            foreach (var noeud in noeuds)
+            {
+                distances[noeud] = int.MaxValue;
+                visites[noeud] = false;
+            }
+            distances[depart] = 0;
+
+            while (visites.Values.Contains(false))
+            {
+                Noeud<T> noeudActuel = null;
+                int distanceMin = int.MaxValue;
+
+                foreach (var noeud in noeuds)
+                {
+                    if (!visites[noeud] && distances[noeud] < distanceMin)
+                    {
+                        distanceMin = distances[noeud];
+                        noeudActuel = noeud;
+                    }
+                }
+
+                if (noeudActuel == null)
+                {
+                    break;
+                }
+
+                visites[noeudActuel] = true;
+
+                foreach (var lien in liens)
+                {
+                    if (lien.Noeud1 == noeudActuel)
+                    {
+                        Noeud<T> voisin = lien.Noeud2;
+                        int nouvelleDistance = distances[noeudActuel] + lien.Poids;
+                        if (nouvelleDistance < distances[voisin])
+                        {
+                            distances[voisin] = nouvelleDistance;
+                        }
+                    }
+                    else if (lien.Noeud2 == noeudActuel)
+                    {
+                        Noeud<T> voisin = lien.Noeud1;
+                        int nouvelleDistance = distances[noeudActuel] + lien.Poids;
+                        if (nouvelleDistance < distances[voisin])
+                        {
+                            distances[voisin] = nouvelleDistance;
+                        }
+                    }
+                }
+            }
+            return distances;
+        }
+
+        public List<Noeud<T>> DijkstraCheminPlusCourt(Noeud<T> depart, Noeud<T> arrivee)
+        {
+            //vérifier si départ et arrivee est dans le graphe
             if (depart == arrivee)
             {
                 return null; // pas de chemin
@@ -207,7 +265,7 @@ namespace ParisShell.Graph {
 
                 foreach (var lien in liens)
                 {
-                    if (lien.Noeud1.Equals(noeudActuel))
+                    if (lien.Noeud1 == noeudActuel)
                     {
                         Noeud<T> voisin = lien.Noeud2;
                         int nouvelleDistance = distances[noeudActuel] + lien.Poids;
@@ -217,7 +275,7 @@ namespace ParisShell.Graph {
                             precedents[voisin] = noeudActuel;
                         }
                     }
-                    else if (lien.Noeud2.Equals(noeudActuel))
+                    else if (lien.Noeud2 == noeudActuel)
                     {
                         Noeud<T> voisin = lien.Noeud1;
                         int nouvelleDistance = distances[noeudActuel] + lien.Poids;
@@ -229,7 +287,8 @@ namespace ParisShell.Graph {
                     }
                 }
             }
-            if (precedents[arrivee] == null && !depart.Equals(arrivee))
+
+            if (precedents[arrivee] == null && depart != arrivee)
             {
                 return null; // Aucun chemin trouvé
             }
@@ -242,63 +301,90 @@ namespace ParisShell.Graph {
             return chemin; 
         }
 
-        public Dictionary<Noeud<T>, int> DijkstraDistances(Noeud<T> depart)
-        {
-            //vérifier si départ est dans le graphe
-            Dictionary<Noeud<T>, int> distances = new Dictionary<Noeud<T>, int>();
-            Dictionary<Noeud<T>, bool> visites = new Dictionary<Noeud<T>, bool>();
+       
 
-            foreach (var noeud in noeuds)
+        public Dictionary<Noeud<T>, int> BellmanFordDistance(Noeud<T> depart)
+        {
+            Dictionary<Noeud<T>, int> distances = new Dictionary<Noeud<T>, int>();
+            foreach (Noeud<T> noeud in noeuds)
             {
-                distances[noeud] = int.MaxValue;
-                visites[noeud] = false;
+                distances[noeud] = int.MaxValue; // Toutes les distances sont infinies au départ
             }
             distances[depart] = 0;
-            while (visites.Values.Count(v => !v) > 0)
+
+            for (int i = 0; i < noeuds.Count - 1; i++)
             {
-                Noeud<T> noeudActuel = null;
-                int distanceMin = int.MaxValue;
-
-                foreach (var noeud in noeuds)
-                {
-                    if (!visites[noeud] && distances[noeud] < distanceMin)
-                    {
-                        distanceMin = distances[noeud];
-                        noeudActuel = noeud;
-                    }
-                }
-
-                if (noeudActuel == null)
-                {
-                    break;
-                }
-
-                visites[noeudActuel] = true;
-
                 foreach (var lien in liens)
                 {
-                    if (lien.Noeud1.Equals(noeudActuel))
+                    if (distances[lien.Noeud1] != int.MaxValue && distances[lien.Noeud1] + lien.Poids < distances[lien.Noeud2])
                     {
-                        Noeud<T> voisin = lien.Noeud2;
-                        int nouvelleDistance = distances[noeudActuel] + lien.Poids;
-                        if (nouvelleDistance < distances[voisin])
-                        {
-                            distances[voisin] = nouvelleDistance;
-                        }
+                        distances[lien.Noeud2] = distances[lien.Noeud1] + lien.Poids;
                     }
-                    else if (lien.Noeud2 == noeudActuel)
+                    if (distances[lien.Noeud2] != int.MaxValue && distances[lien.Noeud2] + lien.Poids < distances[lien.Noeud1])
                     {
-                        Noeud<T> voisin = lien.Noeud1;
-                        int nouvelleDistance = distances[noeudActuel] + lien.Poids;
-                        if (nouvelleDistance < distances[voisin])
-                        {
-                            distances[voisin] = nouvelleDistance;
-                        }
+                        distances[lien.Noeud1] = distances[lien.Noeud2] + lien.Poids;
                     }
                 }
             }
+
+            // Détection des cycles négatifs (en théorie il y en aura jamais)
+            foreach (var lien in liens)
+            {
+                if (distances[lien.Noeud1] != int.MaxValue && distances[lien.Noeud1] + lien.Poids < distances[lien.Noeud2])
+                {
+                    throw new InvalidOperationException("Le graphe contient un cycle de poids négatif.");
+                }
+            }
+
             return distances;
         }
+
+        public List<Noeud<T>> BellmanFordCheminPlusCourt(Noeud<T> depart, Noeud<T> arrivee)
+        {
+            Dictionary<Noeud<T>, int> distances = new Dictionary<Noeud<T>, int>();
+            Dictionary<Noeud<T>, Noeud<T>> predecesseurs = new Dictionary<Noeud<T>, Noeud<T>>();
+
+            foreach (Noeud<T> noeud in noeuds)
+            {
+                distances[noeud] = int.MaxValue;
+                predecesseurs[noeud] = null; // Initialisation explicite des prédécesseurs
+            }
+            distances[depart] = 0;
+
+            for (int i = 0; i < noeuds.Count - 1; i++)
+            {
+                foreach (var lien in liens)
+                {
+                    if (distances[lien.Noeud1] != int.MaxValue && distances[lien.Noeud1] + lien.Poids < distances[lien.Noeud2])
+                    {
+                        distances[lien.Noeud2] = distances[lien.Noeud1] + lien.Poids;
+                        predecesseurs[lien.Noeud2] = lien.Noeud1;
+                    }
+                    if (distances[lien.Noeud2] != int.MaxValue && distances[lien.Noeud2] + lien.Poids < distances[lien.Noeud1])
+                    {
+                        distances[lien.Noeud1] = distances[lien.Noeud2] + lien.Poids;
+                        predecesseurs[lien.Noeud1] = lien.Noeud2;
+                    }
+                }
+            }
+
+            // Détection des cycles négatifs (en théorie il y en aura jamais)
+            foreach (var lien in liens)
+            {
+                if (distances[lien.Noeud1] != int.MaxValue && distances[lien.Noeud1] + lien.Poids < distances[lien.Noeud2])
+                {
+                    throw new InvalidOperationException("Le graphe contient un cycle de poids négatif.");
+                }
+            }
+
+            List<Noeud<T>> chemin = new List<Noeud<T>>();
+            for (Noeud<T> noeud = arrivee; noeud != null; noeud = predecesseurs[noeud])
+            {
+                chemin.Insert(0, noeud);
+            }
+            return chemin;
+        }
+
 
         public void ObtenirCaracteristiques() {
             int nombreNoeuds = noeuds.Count;
