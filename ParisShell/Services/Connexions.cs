@@ -38,12 +38,10 @@ namespace ParisShell.Services {
 
                 if (idPrecedent != -1) {
                     InsererConnexion(maConnexion, feuilleStations, idStation, idPrecedent);
-                    InsererConnexion(maConnexion, feuilleStations, idPrecedent, idStation);
                 }
 
                 if (idSuivant != -1) {
                     InsererConnexion(maConnexion, feuilleStations, idStation, idSuivant);
-                    InsererConnexion(maConnexion, feuilleStations, idSuivant, idStation);
                 }
             }
 
