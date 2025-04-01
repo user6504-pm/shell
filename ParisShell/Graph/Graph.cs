@@ -239,11 +239,12 @@ namespace ParisShell.Graph {
             {
                 chemin.Insert(0, noeud);
             }
-            return chemin; //donner la distance
+            return chemin; 
         }
 
         public Dictionary<Noeud<T>, int> DijkstraDistances(Noeud<T> depart)
         {
+            //vérifier si départ est dans le graphe
             Dictionary<Noeud<T>, int> distances = new Dictionary<Noeud<T>, int>();
             Dictionary<Noeud<T>, bool> visites = new Dictionary<Noeud<T>, bool>();
 
