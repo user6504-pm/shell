@@ -420,7 +420,52 @@ namespace ParisShell.Graph {
 
         public Dictionary<(Noeud<T>, Noeud<T>), int> FloydWarshallDistance() // Dictio == (Noeud1,Noeud2, distance entre Noeud1 et Noeud2)
         {
-            return null; //à compléter
+            var distances = new Dictionary<(Noeud<T>, Noeud<T>), int>();
+            var predecessors = new Dictionary<(Noeud<T>, Noeud<T>), Noeud<T>>();
+
+            foreach (var u in noeuds)
+            {
+                foreach (var v in noeuds)
+                {
+                    if (u == v)
+                    {
+                        distances[(u, v)] = 0;
+                    }
+                    else
+                    {
+                        distances[(u, v)] = int.MaxValue;
+                    }
+                    predecessors[(u, v)] = default;
+                }
+            }
+
+            foreach (var lien in liens)
+            {
+                distances[(lien.Noeud1, lien.Noeud2)] = lien.Poids;
+                distances[(lien.Noeud2, lien.Noeud1)] = lien.Poids;
+                predecessors[(lien.Noeud1, lien.Noeud2)] = lien.Noeud1;
+                predecessors[(lien.Noeud2, lien.Noeud1)] = lien.Noeud2;
+            }
+
+            foreach (var k in noeuds)
+            {
+                foreach (var i in noeuds)
+                {
+                    foreach (var j in noeuds)
+                    {
+                        if (distances[(i, k)] != int.MaxValue && distances[(k, j)] != int.MaxValue)
+                        {
+                            int nouvelleDistance = distances[(i, k)] + distances[(k, j)];
+                            if (nouvelleDistance < distances[(i, j)])
+                            {
+                                distances[(i, j)] = nouvelleDistance;
+                                predecessors[(i, j)] = predecessors[(k, j)];
+                            }
+                        }
+                    }
+                }
+            }
+            return distances;
         }
 
         public List<Noeud<T>> FloydWarshallCheminPlusCourt(Noeud<T> source, Noeud<T> target) //Liste des noeuds traversé par le plus court chemin
