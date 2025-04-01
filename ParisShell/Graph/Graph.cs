@@ -167,7 +167,7 @@ namespace ParisShell.Graph {
 
             return false;
         }
-        public Dictionary<Noeud<T>, int> DijkstraDistances(Noeud<T> depart)
+        public Dictionary<Noeud<T>, int> DijkstraDistances(Noeud<T> depart) //Dictio de distance par rapport à un noeud (départ)
         {
             if (!noeuds.Contains(depart))
             {
@@ -230,7 +230,7 @@ namespace ParisShell.Graph {
             return distances;
         }
 
-        public List<Noeud<T>> DijkstraCheminPlusCourt(Noeud<T> depart, Noeud<T> arrivee)
+        public List<Noeud<T>> DijkstraCheminPlusCourt(Noeud<T> depart, Noeud<T> arrivee) //Liste des noeuds traversé par le plus court chemin
         {
             if (!noeuds.Contains(depart))
             {
@@ -245,6 +245,7 @@ namespace ParisShell.Graph {
             {
                 return null; // pas de chemin
             }
+
             Dictionary<Noeud<T>, int> distances = new Dictionary<Noeud<T>, int>();
             Dictionary<Noeud<T>, Noeud<T>> precedents = new Dictionary<Noeud<T>, Noeud<T>>();
             HashSet<Noeud<T>> visites = new HashSet<Noeud<T>>();
@@ -315,7 +316,7 @@ namespace ParisShell.Graph {
 
        
 
-        public Dictionary<Noeud<T>, int> BellmanFordDistance(Noeud<T> depart)
+        public Dictionary<Noeud<T>, int> BellmanFordDistance(Noeud<T> depart) //Dictio de distance par rapport à un noeud (départ)
         {
             if (!noeuds.Contains(depart))
             {
@@ -356,7 +357,7 @@ namespace ParisShell.Graph {
             return distances;
         }
 
-        public List<Noeud<T>> BellmanFordCheminPlusCourt(Noeud<T> depart, Noeud<T> arrivee)
+        public List<Noeud<T>> BellmanFordCheminPlusCourt(Noeud<T> depart, Noeud<T> arrivee) //Liste des noeuds traversé par le plus court chemin
         {
             if (!noeuds.Contains(depart))
             {
@@ -417,7 +418,15 @@ namespace ParisShell.Graph {
             return chemin;
         }
 
+        public Dictionary<(Noeud<T>, Noeud<T>), int> FloydWarshallDistance() // Dictio == (Noeud1,Noeud2, distance entre Noeud1 et Noeud2)
+        {
+            return null; //à compléter
+        }
 
+        public List<Noeud<T>> FloydWarshallCheminPlusCourt(Noeud<T> source, Noeud<T> target) //Liste des noeuds traversé par le plus court chemin
+        {
+            return null; //à compléter
+        }
         public void ObtenirCaracteristiques() {
             int nombreNoeuds = noeuds.Count;
             int nombreLiens = liens.Count;
