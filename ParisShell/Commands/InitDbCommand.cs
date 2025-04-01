@@ -9,6 +9,7 @@ namespace ParisShell.Commands {
         public string Name => "initdb";
 
         public void Execute(string[] args) {
+            ExcelPackage.LicenseContext = LicenseContext.NonCommercial;
             Shell.PrintWarning("Initializing database [bold]Livininparis_219[/]...");
 
             Console.CursorVisible = false;

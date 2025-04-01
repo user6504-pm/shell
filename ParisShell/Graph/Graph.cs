@@ -6,7 +6,7 @@ using System.Text;
 using System.Threading.Tasks;
 using SkiaSharp;
 using ParisShell.Models;
-
+using System.IO;
 namespace ParisShell.Graph {
     internal class Graph<T> {
         private List<Noeud<T>> noeuds;
@@ -455,7 +455,9 @@ namespace ParisShell.Graph {
             Console.WriteLine($"Degré moyen : {degreMoyen:F2}");
         }
 
-        public void AfficherGraphique(string cheminFichier = "graph_geo.png", int width = 1200, int height = 800) {
+        public void ExporterSvg(string cheminFichier = "graph_geo.svg", List<StationData> chemin = null, int width = 1920, int height = 1080) {
+            if (File.Exists(cheminFichier)) File.Delete(cheminFichier);
+
             if (noeuds.Count == 0) {
                 Console.WriteLine("Le graphe est vide.");
                 return;
@@ -472,73 +474,169 @@ namespace ParisShell.Graph {
             double maxLat = noeuds.Max(n => ((StationData)(object)n.Donnees).Latitude);
             float margin = 40f;
 
-            using var bmp = new SKBitmap(width, height);
-            using var canvas = new SKCanvas(bmp);
-            canvas.Clear(SKColors.White);
+            using var stream = File.OpenWrite(cheminFichier);
+            var bounds = new SKRect(0, 0, width, height);
+            using var canvas = SKSvgCanvas.Create(bounds, stream);
 
-            var nodePaint = new SKPaint {
-                Color = new SKColor(199, 21, 133), // deeppink4_2 (approximé)
-                Style = SKPaintStyle.Fill,
-                IsAntialias = true
+            var backgroundPaint = new SKPaint {
+                Color = SKColors.White,
+                Style = SKPaintStyle.Fill
             };
+            canvas.DrawRect(bounds, backgroundPaint);
 
             var edgePaint = new SKPaint {
-                Color = new SKColor(106, 90, 205), // SlateBlue1 (approximé)
-                StrokeWidth = 2,
+                Color = new SKColor(106, 90, 205),
+                StrokeWidth = 1.5f, // plus fin
                 IsAntialias = true
             };
 
+            var textPaint = new SKPaint {
+                Color = SKColors.Black,
+                TextSize = 12,
+                IsAntialias = true
+            };
+
+            float scale = 1f; // zoom bien plus fort
+            float rangeLon = (float)(maxLon - minLon);
+            float rangeLat = (float)(maxLat - minLat);
+
             SKPoint Convert(StationData s) {
-                float x = (float)((s.Longitude - minLon) / (maxLon - minLon) * (width - 2 * margin)) + margin;
-                float y = (float)((maxLat - s.Latitude) / (maxLat - minLat) * (height - 2 * margin)) + margin;
+                float x = (float)((s.Longitude - minLon - rangeLon / 2) * scale + rangeLon / 2) / rangeLon * (width - 2 * margin) + margin;
+                float y = (float)((maxLat - s.Latitude - rangeLat / 2) * scale + rangeLat / 2) / rangeLat * (height - 2 * margin) + margin;
                 return new SKPoint(x, y);
             }
 
-            void DrawArrow(SKCanvas canvas, SKPoint from, SKPoint to, float arrowSize = 10f) {
-                canvas.DrawLine(from, to, edgePaint);
+            var points = new Dictionary<object, SKPoint>();
+            foreach (var noeud in noeuds) {
+                var station = (StationData)(object)noeud.Donnees;
+                points[noeud] = Convert(station);
+            }
 
-                var angle = Math.Atan2(to.Y - from.Y, to.X - from.X);
+            var degres = noeuds.ToDictionary(
+                n => n,
+                n => liens.Count(l => l.Noeud1 == n || l.Noeud2 == n)
+            );
+            int maxDegre = degres.Values.Max();
+
+            var rayonNoeud = new Dictionary<object, float>();
+
+            foreach (var noeud in noeuds) {
+                int degre = degres[noeud];
+                float radius = 1.5f + degre * 0.7f;
+                rayonNoeud[noeud] = radius;
+            }
+
+            void DrawArrowFromNodeToNode(object n1, object n2) {
+                var from = points[n1];
+                var to = points[n2];
+                var r1 = rayonNoeud[n1];
+                var r2 = rayonNoeud[n2];
+
+
+                var dx = to.X - from.X;
+                var dy = to.Y - from.Y;
+                var len = (float)Math.Sqrt(dx * dx + dy * dy);
+                if (len < 1e-5) return;
+
+                var ux = dx / len;
+                var uy = dy / len;
+
+                var start = new SKPoint(from.X + ux * r1, from.Y + uy * r1);
+                var end = new SKPoint(to.X - ux * r2, to.Y - uy * r2);
+
+                canvas.DrawLine(start, end, edgePaint);
+
+                float arrowSize = 6f;
+                var angle = Math.Atan2(end.Y - start.Y, end.X - start.X);
                 var sin = (float)Math.Sin(angle);
                 var cos = (float)Math.Cos(angle);
 
-                var p1 = new SKPoint(
-                    to.X - arrowSize * cos + arrowSize / 2 * sin,
-                    to.Y - arrowSize * sin - arrowSize / 2 * cos
-                );
-                var p2 = new SKPoint(
-                    to.X - arrowSize * cos - arrowSize / 2 * sin,
-                    to.Y - arrowSize * sin + arrowSize / 2 * cos
-                );
+                var p1 = new SKPoint(end.X - arrowSize * cos + arrowSize / 2 * sin, end.Y - arrowSize * sin - arrowSize / 2 * cos);
+                var p2 = new SKPoint(end.X - arrowSize * cos - arrowSize / 2 * sin, end.Y - arrowSize * sin + arrowSize / 2 * cos);
 
                 var arrowPath = new SKPath();
-                arrowPath.MoveTo(to);
+                arrowPath.MoveTo(end);
                 arrowPath.LineTo(p1);
                 arrowPath.LineTo(p2);
                 arrowPath.Close();
-
                 canvas.DrawPath(arrowPath, edgePaint);
             }
 
-            foreach (var lien in liens) {
-                var from = Convert((StationData)(object)lien.Noeud1.Donnees);
-                var to = Convert((StationData)(object)lien.Noeud2.Donnees);
-                DrawArrow(canvas, from, to);
+            foreach (var lien in liens)
+                DrawArrowFromNodeToNode(lien.Noeud1, lien.Noeud2);
+
+            if (chemin != null && chemin.Count >= 2) {
+                var highlightPaint = new SKPaint {
+                    Color = SKColors.Red,
+                    StrokeWidth = 3,
+                    IsAntialias = true
+                };
+
+                void DrawHighlightArrow(object n1, object n2) {
+                    var from = points[n1];
+                    var to = points[n2];
+                    var r1 = rayonNoeud[n1];
+                    var r2 = rayonNoeud[n2];
+
+                    var dx = to.X - from.X;
+                    var dy = to.Y - from.Y;
+                    var len = (float)Math.Sqrt(dx * dx + dy * dy);
+                    if (len < 1e-5) return;
+
+                    var ux = dx / len;
+                    var uy = dy / len;
+
+                    var start = new SKPoint(from.X + ux * r1, from.Y + uy * r1);
+                    var end = new SKPoint(to.X - ux * r2, to.Y - uy * r2);
+
+                    canvas.DrawLine(start, end, highlightPaint);
+
+                    // Tête de flèche rouge
+                    float arrowSize = 7;
+                    var angle = Math.Atan2(end.Y - start.Y, end.X - start.X);
+                    var sin = (float)Math.Sin(angle);
+                    var cos = (float)Math.Cos(angle);
+
+                    var p1 = new SKPoint(end.X - arrowSize * cos + arrowSize / 2 * sin, end.Y - arrowSize * sin - arrowSize / 2 * cos);
+                    var p2 = new SKPoint(end.X - arrowSize * cos - arrowSize / 2 * sin, end.Y - arrowSize * sin + arrowSize / 2 * cos);
+
+                    var arrowPath = new SKPath();
+                    arrowPath.MoveTo(end);
+                    arrowPath.LineTo(p1);
+                    arrowPath.LineTo(p2);
+                    arrowPath.Close();
+                    canvas.DrawPath(arrowPath, highlightPaint);
+                }
+
+                for (int i = 0; i < chemin.Count - 1; i++) {
+                    DrawHighlightArrow(chemin[i], chemin[i + 1]);
+                }
             }
 
             foreach (var noeud in noeuds) {
                 var station = (StationData)(object)noeud.Donnees;
-                var point = Convert(station);
-                canvas.DrawCircle(point, 5, nodePaint);
+                var point = points[noeud];
+                int degre = degres[noeud];
+                float radius = rayonNoeud[noeud];
+
+                byte intensity = (byte)(255 - (degre * 200 / Math.Max(1, maxDegre)));
+                var color = new SKColor((byte)(180 - intensity / 2), (byte)(20 + intensity), (byte)(130 + intensity / 4));
+
+                var nodePaint = new SKPaint {
+                    Color = color,
+                    Style = SKPaintStyle.Fill,
+                    IsAntialias = true
+                };
+
+                canvas.DrawCircle(point, radius, nodePaint);
+
+                if (degre >= 10) {
+                    canvas.DrawText(station.Nom, point.X + radius + 2, point.Y - 2, textPaint);
+                }
             }
 
-            using var image = SKImage.FromBitmap(bmp);
-            using var data = image.Encode(SKEncodedImageFormat.Png, 100);
-            using var stream = File.OpenWrite(cheminFichier);
-            data.SaveTo(stream);
-
-            Shell.PrintSucces($"Graphe orienté exporté avec flèches : {cheminFichier}");
+            Shell.PrintSucces($"Graphe SVG exporté avec flèches : {cheminFichier}");
         }
-
     }
 }
 
