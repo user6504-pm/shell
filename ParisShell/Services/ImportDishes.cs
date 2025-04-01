@@ -32,7 +32,8 @@ public class ImportDishes
         Random rand = new Random();
         int ligne = 2;
         int indexCuisinier = 0;
-
+        float min = 10.00f;
+        float max = 20.00f;
         while (ligne <= nbLignes && indexCuisinier < cuisiniers.Count)
         {
             int cuisinierId = cuisiniers[indexCuisinier];
@@ -45,7 +46,7 @@ public class ImportDishes
                 {
                     string typePlat = feuille.Cells[ligne, 2].Text;
                     int nbPersonnes = int.Parse(feuille.Cells[ligne, 3].Text);
-                    decimal prix = decimal.Parse(feuille.Cells[ligne, 6].Text, CultureInfo.InvariantCulture);
+                    decimal prix = (decimal)(rand.NextDouble() * (max - min) + min);
                     int quantite = rand.Next(1, 7);
                     DateTime fabrication = feuille.Cells[ligne, 4].GetValue<DateTime>();
                     DateTime peremption = feuille.Cells[ligne, 5].GetValue<DateTime>();
