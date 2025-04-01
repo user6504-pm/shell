@@ -519,14 +519,12 @@ namespace ParisShell.Graph {
                 canvas.DrawPath(arrowPath, edgePaint);
             }
 
-            // Dessiner les liens avec flèches (direction : noeud1 -> noeud2)
             foreach (var lien in liens) {
                 var from = Convert((StationData)(object)lien.Noeud1.Donnees);
                 var to = Convert((StationData)(object)lien.Noeud2.Donnees);
                 DrawArrow(canvas, from, to);
             }
 
-            // Dessiner les noeuds
             foreach (var noeud in noeuds) {
                 var station = (StationData)(object)noeud.Donnees;
                 var point = Convert(station);
