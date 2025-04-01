@@ -9,7 +9,7 @@ using ParisShell.Models;
 
 namespace ParisShell.Graph {
     internal class GraphLoader {
-        public static void ConstruireEtAfficherGraph(MySqlConnection connexion, string nomFichier = "graphe_metro.png") {
+        public static void ConstruireEtAfficherGraph(MySqlConnection connexion, string nomFichier = "graphe_metro.svg") {
             Graph<StationData> graphe = new Graph<StationData>();
             Dictionary<int, Noeud<StationData>> noeudsDict = new Dictionary<int, Noeud<StationData>>();
 
@@ -59,7 +59,21 @@ namespace ParisShell.Graph {
                     try {
                         ctx.Spinner(Spinner.Known.Flip);
                         ctx.SpinnerStyle(Style.Parse("green"));
-                        graphe.AfficherGraphique(nomFichier);
+                        int idDepart = 101;
+                        int idArrivee = 217;
+
+                        if (!noeudsDict.TryGetValue(idDepart, out var noeudDepart)) {
+                            Shell.PrintError("Station de départ introuvable.");
+                            return;
+                        }
+
+                        if (!noeudsDict.TryGetValue(idArrivee, out var noeudArrivee)) {
+                            Shell.PrintError("Station d'arrivée introuvable.");
+                            return;
+                        }
+
+                        var chemin = graphe.BellmanFordCheminPlusCourt(noeudDepart, noeudArrivee);
+                        graphe.ExporterSvg(nomFichier);
                         Shell.PrintSucces("Graph created successfully.");
                     }
                     catch (Exception ex) {
