@@ -6,7 +6,7 @@ namespace ParisShell.Commands
 {
     internal class CuisinierCommand : ICommand
     {
-        public string Name => "cuisinier";
+        public string Name => "cook";
         private readonly SqlService _sqlService;
         private readonly Session _session;
 
@@ -26,7 +26,7 @@ namespace ParisShell.Commands
 
             if (args.Length == 0)
             {
-                Shell.PrintWarning("Usage: cuisinier [clients|stats|dishoftheday|sales|dishes]");
+                Shell.PrintWarning("Usage: cook [clients|stats|dishoftheday|sales|dishes|newdish]");
                 return;
             }
 
@@ -38,16 +38,16 @@ namespace ParisShell.Commands
                 case "stats":
                     ShowPlatsStats();
                     break;
-                case "platdujour":
+                case "dishoftheday":
                     ShowPlatDuJour();
                     break;
-                case "ventes":
+                case "sales":
                     ShowTotalVentesParPlat();
                     break;
                 case "dishes":
                     ShowDishes();
                     break;
-                case "addDish":
+                case "newdish":
                     AddDish();
                     break;
                 default:
@@ -194,7 +194,63 @@ namespace ParisShell.Commands
         }
         private void AddDish()
         {
+            AnsiConsole.Clear();
+            AnsiConsole.MarkupLine("[green]Add a new dish[/]");
 
+            string type = AnsiConsole.Prompt(
+                new SelectionPrompt<string>()
+                    .Title("Select the [green]dish type[/]:")
+                    .AddChoices("ENTREE", "PLAT PRINCIPAL", "DESSERT"));
+
+            string nationalite = AnsiConsole.Prompt(
+                new SelectionPrompt<string>()
+                    .Title("Select the [green]dish type[/]:")
+                    .AddChoices("Japonaise", "Française", "Indienne", "Chinoise", "Espagnole", "Italienne","Mexicaine", "Thaïlandaise", "Coréenne", "Grecque", "Marocaine", "Vietnamienne", "Turque", "Libanaise"));
+            decimal prix = AnsiConsole.Ask<decimal>("Enter the [green]price per person[/] (e.g. 12.50):");
+            int quantite = AnsiConsole.Ask<int>("Enter the [green]initial quantity[/] of the dish:");
+            int nbPersonnes = AnsiConsole.Ask<int>("Enter the [green]number of people[/] the dish serves:");
+
+            DateTime dateFabrication = DateTime.Today;
+            DateTime datePeremption = AnsiConsole.Ask<DateTime>("Enter the [green]expiration date[/] (YYYY-MM-DD):");
+
+            string regime = AnsiConsole.Prompt(
+                new SelectionPrompt<string>()
+                    .Title("Select the [green]dish type[/]:")
+                    .AddChoices("Végan", "Végétarien", "Halal", "Kasher", "Sans gluten", "Sans lactose","Faible en glucides", "Keto", "Paléo"));
+            string ingredients = AnsiConsole.Ask<string>("Enter the [green]ingredients[/] (optional, press Enter to skip):");
+            string photo = AnsiConsole.Ask<string>("Enter the [green]photo URL[/] (optional, type Enter to skip):");
+
+            string query = @"
+        INSERT INTO plats 
+        (user_id, type_plat, nationalite, prix_par_personne, quantite, nb_personnes, 
+         date_fabrication, date_peremption, regime_alimentaire, ingredients, photo)
+        VALUES 
+        (@uid, @type, @nat, @prix, @quant, @nbPers, @fab, @peremp, @regime, @ingred, @photo);";
+
+            using var cmd = new MySqlCommand(query, _sqlService.GetConnection());
+            cmd.Parameters.AddWithValue("@uid", _session.CurrentUser.Id);
+            cmd.Parameters.AddWithValue("@type", type);
+            cmd.Parameters.AddWithValue("@nat", nationalite);
+            cmd.Parameters.AddWithValue("@prix", prix);
+            cmd.Parameters.AddWithValue("@quant", quantite);
+            cmd.Parameters.AddWithValue("@nbPers", nbPersonnes);
+            cmd.Parameters.AddWithValue("@fab", dateFabrication);
+            cmd.Parameters.AddWithValue("@peremp", datePeremption);
+            cmd.Parameters.AddWithValue("@regime", string.IsNullOrWhiteSpace(regime) ? DBNull.Value : regime);
+            cmd.Parameters.AddWithValue("@ingred", string.IsNullOrWhiteSpace(ingredients) ? DBNull.Value : ingredients);
+            cmd.Parameters.AddWithValue("@photo", string.IsNullOrWhiteSpace(photo) ? DBNull.Value : photo);
+
+            int rows = cmd.ExecuteNonQuery();
+
+            if (rows > 0)
+            {
+                AnsiConsole.MarkupLine("[green]Dish successfully added![/]");
+            }
+            else
+            {
+                Shell.PrintError("Failed to insert dish.");
+            }
         }
+
     }
 }

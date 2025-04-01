@@ -22,7 +22,7 @@ namespace ParisShell {
             commands["initdb"] = args => new InitDbCommand().Execute(args);
             commands["autoconnect"] = args => new AutoConnectCommand(_sqlService, _session).Execute(args);
             commands["user"] = args => new UserCommand(_sqlService, _session).Execute(args);
-            commands["cuisinier"] = args => new CuisinierCommand(_sqlService, _session).Execute(args);
+            commands["cook"] = args => new CuisinierCommand(_sqlService, _session).Execute(args);
             commands["analytics"] = args => new AnalyticsCommand(_sqlService, _session).Execute(args);
             commands["logout"] = args => new LogoutCommand(_session).Execute(args);
             commands["tuto"] = args => new TutoCommand().Execute(args);
