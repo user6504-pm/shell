@@ -234,11 +234,11 @@ namespace ParisShell.Graph {
         {
             if (!noeuds.Contains(depart))
             {
-                throw new ArgumentException("Le nœud de départ n'existe pas dans le graphe", nameof(depart));
+                throw new ArgumentException("Le nœud de départ n'existe pas dans le graphe");
             }
             if (!noeuds.Contains(arrivee))
             {
-                throw new ArgumentException("Le nœud d'arrivée n'existe pas dans le graphe", nameof(arrivee));
+                throw new ArgumentException("Le nœud d'arrivée n'existe pas dans le graphe");
             }
 
             if (depart == arrivee)
@@ -358,6 +358,21 @@ namespace ParisShell.Graph {
 
         public List<Noeud<T>> BellmanFordCheminPlusCourt(Noeud<T> depart, Noeud<T> arrivee)
         {
+            if (!noeuds.Contains(depart))
+            {
+                throw new ArgumentException("Le nœud de départ n'existe pas dans le graphe");
+            }
+
+            if (!noeuds.Contains(arrivee))
+            {
+                throw new ArgumentException("Le nœud d'arrivée n'existe pas dans le graphe");
+            }
+
+            if (depart == arrivee)
+            {
+                return null; // pas de chemin
+            }
+
             Dictionary<Noeud<T>, int> distances = new Dictionary<Noeud<T>, int>();
             Dictionary<Noeud<T>, Noeud<T>> predecesseurs = new Dictionary<Noeud<T>, Noeud<T>>();
 
