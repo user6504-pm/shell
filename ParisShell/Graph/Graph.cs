@@ -232,7 +232,15 @@ namespace ParisShell.Graph {
 
         public List<Noeud<T>> DijkstraCheminPlusCourt(Noeud<T> depart, Noeud<T> arrivee)
         {
-            //vérifier si départ et arrivee est dans le graphe
+            if (!noeuds.Contains(depart))
+            {
+                throw new ArgumentException("Le nœud de départ n'existe pas dans le graphe", nameof(depart));
+            }
+            if (!noeuds.Contains(arrivee))
+            {
+                throw new ArgumentException("Le nœud d'arrivée n'existe pas dans le graphe", nameof(arrivee));
+            }
+
             if (depart == arrivee)
             {
                 return null; // pas de chemin
