@@ -20,7 +20,7 @@ namespace ParisShell.Commands
         {
             if (!_session.IsAuthenticated || !_session.IsInRole("CUISINIER"))
             {
-                Shell.PrintError("Access restricted to cuisiniers only.");
+                Shell.PrintError("Access restricted to cooks only.");
                 return;
             }
 
