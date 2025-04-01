@@ -169,7 +169,11 @@ namespace ParisShell.Graph {
         }
         public Dictionary<Noeud<T>, int> DijkstraDistances(Noeud<T> depart)
         {
-            //vérifier si départ est dans le graphe
+            if (!noeuds.Contains(depart))
+            {
+                throw new ArgumentException("Le nœud de départ n'existe pas dans le graphe");
+            }
+
             Dictionary<Noeud<T>, int> distances = new Dictionary<Noeud<T>, int>();
             Dictionary<Noeud<T>, bool> visites = new Dictionary<Noeud<T>, bool>();
 
@@ -305,6 +309,11 @@ namespace ParisShell.Graph {
 
         public Dictionary<Noeud<T>, int> BellmanFordDistance(Noeud<T> depart)
         {
+            if (!noeuds.Contains(depart))
+            {
+                throw new ArgumentException("Le nœud de départ n'existe pas dans le graphe");
+            }
+
             Dictionary<Noeud<T>, int> distances = new Dictionary<Noeud<T>, int>();
             foreach (Noeud<T> noeud in noeuds)
             {
