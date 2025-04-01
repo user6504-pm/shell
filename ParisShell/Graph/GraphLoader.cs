@@ -73,7 +73,7 @@ namespace ParisShell.Graph {
                         }
 
                         var chemin = graphe.BellmanFordCheminPlusCourt(noeudDepart, noeudArrivee);
-                        graphe.ExporterSvg(nomFichier);
+                        graphe.ExporterSvg(nomFichier, chemin);
                         Shell.PrintSucces("Graph created successfully.");
                     }
                     catch (Exception ex) {
