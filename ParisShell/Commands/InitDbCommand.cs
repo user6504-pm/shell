@@ -84,7 +84,7 @@ namespace ParisShell.Commands {
                 @"CREATE TABLE IF NOT EXISTS plats (
                     plat_id INT AUTO_INCREMENT PRIMARY KEY,
                     user_id INT NOT NULL,
-                    plat_name VARCHAR(100),
+                    plat_name VARCHAR(100) NOT NULL,
                     type_plat ENUM('ENTREE','PLAT PRINCIPAL','DESSERT') NOT NULL,
                     nb_personnes INT NOT NULL,
                     quantite INT,
