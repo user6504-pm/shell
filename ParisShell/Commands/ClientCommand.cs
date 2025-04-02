@@ -1,10 +1,10 @@
-﻿using Spectre.Console;
-using MySql.Data.MySqlClient;
+﻿using MySql.Data.MySqlClient;
+using ParisShell.Graph;
+using ParisShell.Models;
 using ParisShell.Services;
-using System.Drawing.Text;
+using Spectre.Console;
 
-namespace ParisShell.Commands
-{
+namespace ParisShell.Commands {
     internal class ClientCommand : ICommand
     {
         public string Name => "client";
@@ -44,65 +44,92 @@ namespace ParisShell.Commands
                 break;
             }
         }
+
+        private int GetStationIdFromUser(int userId) {
+            const string query = @"
+                SELECT s.station_id
+                FROM users u
+                JOIN stations_metro s ON u.metroproche = s.station_id
+                WHERE u.user_id = @id;
+            ";
+
+            using var cmd = new MySqlCommand(query, _sqlService.GetConnection());
+            cmd.Parameters.AddWithValue("@id", userId);
+            return Convert.ToInt32(cmd.ExecuteScalar());
+        }
+
         private void NewCommand()
         {
             AnsiConsole.Clear();
 
-            if (!_sqlService.IsConnected)
-            {
+            if (!_sqlService.IsConnected) {
                 Shell.PrintError("You must be logged to order.");
                 return;
             }
 
-            if (!_session.IsAuthenticated || !_session.IsInRole("CLIENT"))
-            {
+            if (!_session.IsAuthenticated || !_session.IsInRole("CLIENT")) {
                 Shell.PrintError("Only clients can make an order.");
                 return;
             }
 
-            List<(int Id, string Name, string Type, string Nationalite, decimal Prix, int Quantite)> platsDisponibles = new List<(int, string, string, string, decimal, int)>();
+            List<(int PlatId, string Name, string Type, string Nat, decimal Prix, int Quantite, int UserId)> platsTemp = new();
 
             MySqlCommand selectCmd = new MySqlCommand(@"
-                SELECT p.plat_id, p.plat_name, p.type_plat, p.nationalite, p.prix_par_personne, p.quantite
+                SELECT p.plat_id, p.plat_name, p.type_plat, p.nationalite, p.prix_par_personne, p.quantite, p.user_id
                 FROM plats p
-                WHERE p.quantite > 0;",
-                _sqlService.GetConnection());
+                WHERE p.quantite > 0;", _sqlService.GetConnection());
 
-            MySqlDataReader reader = selectCmd.ExecuteReader();
-
-            while (reader.Read())
-            {
-                int id = reader.GetInt32("plat_id");
-                string name = reader.GetString("plat_name");
-                string type = reader.GetString("type_plat");
-                string nat = reader.GetString("nationalite");
-                decimal prix = reader.GetDecimal("prix_par_personne");
-                int quantite = reader.GetInt32("quantite");
-
-                platsDisponibles.Add((id, name, type, nat, prix, quantite));
+            using (MySqlDataReader reader = selectCmd.ExecuteReader()) {
+                while (reader.Read()) {
+                    platsTemp.Add((
+                        reader.GetInt32("plat_id"),
+                        reader.GetString("plat_name"),
+                        reader.GetString("type_plat"),
+                        reader.GetString("nationalite"),
+                        reader.GetDecimal("prix_par_personne"),
+                        reader.GetInt32("quantite"),
+                        reader.GetInt32("user_id")
+                    ));
+                }
             }
 
-            reader.Close();
             selectCmd.Dispose();
 
-            if (platsDisponibles.Count == 0)
-            {
+            Graph<StationData> graph = GraphLoader.Construire(_sqlService.GetConnection());
+            var noeudsDict = graph.ObtenirNoeuds().ToDictionary(n => n.Id);
+
+            List<(int Id, string Name, string Type, string Nationalite, decimal Prix, int Quantite, decimal Temps)> platsDisponibles = new();
+
+            foreach (var plat in platsTemp) {
+                int user_station = GetStationIdFromUser(plat.UserId);
+                int session_station = GetStationIdFromUser(_session.CurrentUser.Id);
+
+                if (!noeudsDict.TryGetValue(user_station, out var noeudDepart)) continue;
+                if (!noeudsDict.TryGetValue(session_station, out var noeudArrivee)) continue;
+
+                var chemin = graph.DijkstraCheminPlusCourt(noeudDepart, noeudArrivee);
+                decimal temps = graph.TempsCheminStations(chemin);
+
+                platsDisponibles.Add((plat.PlatId, plat.Name, plat.Type, plat.Nat, plat.Prix, plat.Quantite, temps));
+            }
+
+            if (platsDisponibles.Count == 0) {
                 AnsiConsole.MarkupLine("[yellow]No available dishes for the moment.[/]");
                 return;
             }
 
             Table table = new Table().Border(TableBorder.Rounded);
-            table.AddColumns("ID", "Name", "Type", "Nationality", "Price", "Quantity");
+            table.AddColumns("ID", "Name", "Type", "Nationality", "Price", "Quantity", "Time");
 
-            foreach ((int id, string name, string type, string nat, decimal prix, int quantite) in platsDisponibles)
-            {
+            foreach ((int id, string name, string type, string nat, decimal prix, int quantite, decimal temps) in platsDisponibles) {
                 table.AddRow(
                     id.ToString(),
                     name,
                     type,
                     nat,
                     prix.ToString(),
-                    quantite.ToString()
+                    quantite.ToString(),
+                    temps.ToString("0.00") + " min"
                 );
             }
 
@@ -116,13 +143,13 @@ namespace ParisShell.Commands
             }
             if (confirm)
             {
-                (int Id, string Name, string Type, string Nationalite, decimal Prix, int Quantite) platSelectionne = default;
+                (int Id, string Name, string Type, string Nationalite, decimal Prix, int Quantite, decimal Temps) platSelectionne = default;
                 bool found = false;
                 int i = 0;
 
                 while (i < platsDisponibles.Count && !found)
                 {
-                    (int Id, string Name, string Type, string Nationalite, decimal Prix, int Quantite) plat = platsDisponibles[i];
+                    (int Id, string Name, string Type, string Nationalite, decimal Prix, int Quantite, decimal Temps) plat = platsDisponibles[i];
 
                     if (plat.Id == platIdChoisi)
                     {

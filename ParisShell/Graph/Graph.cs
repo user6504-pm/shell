@@ -17,6 +17,7 @@ namespace ParisShell.Graph {
             liens = new List<Lien<T>>();
         }
 
+
         public void AjouterNoeud(Noeud<T> noeud) {
             noeuds.Add(noeud);
         }
@@ -145,6 +146,10 @@ namespace ParisShell.Graph {
             }
             return false;
         }
+        public List<Noeud<T>> ObtenirNoeuds() {
+            return noeuds;
+        }
+
 
         private bool DetecterCycleDFS(Noeud<T> noeud, Noeud<T> parent, HashSet<Noeud<T>> visite) {
             visite.Add(noeud);
@@ -499,6 +504,37 @@ namespace ParisShell.Graph {
             Console.WriteLine($"Degré maximum : {degreMax}");
             Console.WriteLine($"Degré moyen : {degreMoyen:F2}");
         }
+
+        public decimal TempsCheminStations(List<Noeud<StationData>> chemin) {
+            if (chemin == null || chemin.Count < 2)
+                return 0m;
+
+            const decimal vitesseKmH = 15m;
+            double distanceTotaleKm = 0;
+
+            for (int i = 0; i < chemin.Count - 1; i++) {
+                var from = chemin[i];
+                var to = chemin[i + 1];
+
+                var lien = liens.FirstOrDefault(l =>
+                    (l.Noeud1.Equals(from) && l.Noeud2.Equals(to)) ||
+                    (l.Noeud1.Equals(to) && l.Noeud2.Equals(from)));
+
+                if (lien != null) {
+                    distanceTotaleKm += lien.Poids / 1000.0;
+                }
+                else {
+                    Shell.PrintWarning($"Missing link between {from.Donnees.Nom} and {to.Donnees.Nom}");
+                }
+            }
+
+            decimal tempsHeures = (decimal)distanceTotaleKm / vitesseKmH;
+            decimal tempsMinutes = tempsHeures * 60;
+
+            return Math.Round(tempsMinutes, 2);
+        }
+
+
 
         public void ExporterSvg(string cheminFichier = "graph_geo.svg", List<Noeud<T>> chemin = null, int width = 1920, int height = 1080) {
             if (File.Exists(cheminFichier)) File.Delete(cheminFichier);
