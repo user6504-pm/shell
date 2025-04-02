@@ -84,6 +84,7 @@ namespace ParisShell.Commands {
                 @"CREATE TABLE IF NOT EXISTS plats (
                     plat_id INT AUTO_INCREMENT PRIMARY KEY,
                     user_id INT NOT NULL,
+                    plat_name VARCHAR(100),
                     type_plat ENUM('ENTREE','PLAT PRINCIPAL','DESSERT') NOT NULL,
                     nb_personnes INT NOT NULL,
                     quantite INT,
@@ -155,7 +156,7 @@ namespace ParisShell.Commands {
                         ImportUser.ImportUtilisateursMySql("../../../../Infos_Excel/user.xlsx", maConnexion);
 
                         ctx.Status("Importing dishes...");
-                        ImportDishes.ImportDishesSQL("../../../../Infos_Excel/plats_simules.xlsx",maConnexion); 
+                        ImportDishes.ImportDishesSQL("../../../../Infos_Excel/plats_simules_corrige.xlsx",maConnexion); 
                     
 
                         Shell.PrintSucces("Excel data imported successfully.");

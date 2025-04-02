@@ -17,7 +17,8 @@ namespace ParisShell.Commands {
                 return;
             }
 
-            try {
+            try
+            {
                 Console.CursorVisible = false;
 
                 string mdp = AnsiConsole.Prompt(
@@ -26,7 +27,8 @@ namespace ParisShell.Commands {
                         .Secret(' ')
                 );
 
-                var config = new SqlConnectionConfig {
+                var config = new SqlConnectionConfig
+                {
                     SERVER = "localhost",
                     PORT = "3306",
                     UID = "root",
@@ -36,8 +38,9 @@ namespace ParisShell.Commands {
 
                 _sqlService.Connect(config);
             }
-            finally {
-                Console.CursorVisible = true; // Toujours réactiver à la fin, même en cas d'erreur
+            finally
+            {
+                Console.CursorVisible = true;
             }
         }
     }

@@ -60,10 +60,10 @@ namespace ParisShell.Commands
                 return;
             }
 
-            List<(int Id, string Type, string Nationalite, decimal Prix, int Quantite)> platsDisponibles = new List<(int, string, string, decimal, int)>();
+            List<(int Id, string Name, string Type, string Nationalite, decimal Prix, int Quantite)> platsDisponibles = new List<(int, string, string, string, decimal, int)>();
 
             MySqlCommand selectCmd = new MySqlCommand(@"
-                SELECT p.plat_id, p.type_plat, p.nationalite, p.prix_par_personne, p.quantite
+                SELECT p.plat_id, p.plat_name, p.type_plat, p.nationalite, p.prix_par_personne, p.quantite
                 FROM plats p
                 WHERE p.quantite > 0;",
                 _sqlService.GetConnection());
@@ -73,12 +73,13 @@ namespace ParisShell.Commands
             while (reader.Read())
             {
                 int id = reader.GetInt32("plat_id");
+                string name = reader.GetString("plat_name");
                 string type = reader.GetString("type_plat");
                 string nat = reader.GetString("nationalite");
                 decimal prix = reader.GetDecimal("prix_par_personne");
                 int quantite = reader.GetInt32("quantite");
 
-                platsDisponibles.Add((id, type, nat, prix, quantite));
+                platsDisponibles.Add((id, name, type, nat, prix, quantite));
             }
 
             reader.Close();
@@ -91,15 +92,16 @@ namespace ParisShell.Commands
             }
 
             Table table = new Table().Border(TableBorder.Rounded);
-            table.AddColumns("ID", "Type", "Nationality", "Price", "Quantity");
+            table.AddColumns("ID", "Name", "Type", "Nationality", "Price", "Quantity");
 
-            foreach ((int id, string type, string nat, decimal prix, int quantite) in platsDisponibles)
+            foreach ((int id, string name, string type, string nat, decimal prix, int quantite) in platsDisponibles)
             {
                 table.AddRow(
                     id.ToString(),
+                    name,
                     type,
                     nat,
-                    $"{prix}",
+                    prix.ToString(),
                     quantite.ToString()
                 );
             }
@@ -108,19 +110,19 @@ namespace ParisShell.Commands
             bool confirm = true;
             int platIdChoisi = AnsiConsole.Ask<int>("Enter the [green]ID[/] of the dish to order: (type 0 to cancel)");
 
-            if( platIdChoisi == 0 )
+            if (platIdChoisi == 0)
             {
                 confirm = false;
             }
             if (confirm)
             {
-                (int Id, string Type, string Nationalite, decimal Prix, int Quantite) platSelectionne = default;
+                (int Id, string Name, string Type, string Nationalite, decimal Prix, int Quantite) platSelectionne = default;
                 bool found = false;
                 int i = 0;
 
                 while (i < platsDisponibles.Count && !found)
                 {
-                    (int Id, string Type, string Nationalite, decimal Prix, int Quantite) plat = platsDisponibles[i];
+                    (int Id, string Name, string Type, string Nationalite, decimal Prix, int Quantite) plat = platsDisponibles[i];
 
                     if (plat.Id == platIdChoisi)
                     {
@@ -166,14 +168,14 @@ namespace ParisShell.Commands
                 if (confirmation == "No")
                 {
                     AnsiConsole.MarkupLine("[yellow]Command aborted by the user.[/]");
-                    confirm = false;
+                    conf = false;
                 }
                 if (conf)
                 {
                     MySqlCommand insertCmd = new MySqlCommand(@"
-                INSERT INTO commandes (client_id, plat_id, quantite)
-                VALUES (@cid, @pid, @qte);",
-                _sqlService.GetConnection());
+                    INSERT INTO commandes (client_id, plat_id, quantite)
+                    VALUES (@cid, @pid, @qte);",
+                    _sqlService.GetConnection());
 
                     insertCmd.Parameters.AddWithValue("@cid", _session.CurrentUser.Id);
                     insertCmd.Parameters.AddWithValue("@pid", platSelectionne.Id);
@@ -184,10 +186,10 @@ namespace ParisShell.Commands
                     int nouvelleQuantite = platSelectionne.Quantite - quantiteCommandee;
 
                     MySqlCommand updateCmd = new MySqlCommand(@"
-                UPDATE plats
-                SET quantite = @newQty
-                WHERE plat_id = @pid;",
-                        _sqlService.GetConnection());
+                    UPDATE plats
+                    SET quantite = @newQty
+                    WHERE plat_id = @pid;",
+                            _sqlService.GetConnection());
 
                     updateCmd.Parameters.AddWithValue("@newQty", nouvelleQuantite);
                     updateCmd.Parameters.AddWithValue("@pid", platSelectionne.Id);
@@ -195,11 +197,9 @@ namespace ParisShell.Commands
                     updateCmd.Dispose();
 
                     AnsiConsole.Clear();
-                    AnsiConsole.MarkupLine($"[green] Order recorded for dish ID {platSelectionne.Id} ({quantiteCommandee} unit(s)).[/]");
+                    AnsiConsole.MarkupLine($"[green] Order recorded for dish '{platSelectionne.Name}' (ID {platSelectionne.Id}, {quantiteCommandee} unit(s)).[/]");
                 }
-
             }
-
         }
 
 
@@ -207,9 +207,9 @@ namespace ParisShell.Commands
         private void ShowMyOrders()
         {
             MySqlCommand cmd = new MySqlCommand(@"
-                SELECT c.commande_id, p.type_plat, p.nationalite,
-               c.quantite, p.prix_par_personne,
-               c.date_commande, c.statut
+                SELECT c.commande_id, p.plat_name, p.type_plat, p.nationalite,
+                       c.quantite, p.prix_par_personne,
+                       c.date_commande, c.statut
                 FROM commandes c
                 JOIN plats p ON c.plat_id = p.plat_id
                 WHERE c.client_id = @cid
@@ -218,7 +218,7 @@ namespace ParisShell.Commands
 
             cmd.Parameters.AddWithValue("@cid", _session.CurrentUser.Id);
 
-            using var reader = cmd.ExecuteReader();
+            MySqlDataReader reader = cmd.ExecuteReader();
 
             bool hasOrders = reader.HasRows;
 
@@ -229,19 +229,20 @@ namespace ParisShell.Commands
 
             if (hasOrders)
             {
-                var table = new Table().Border(TableBorder.Rounded);
-                table.AddColumns("ID Commande", "Type du plat", "Nationalité", "Quantité", "Prix", "Date", "Statut");
+                Table table = new Table().Border(TableBorder.Rounded);
+                table.AddColumns("ID Commande", "Nom du plat", "Type", "Nationalité", "Quantité", "Prix", "Date", "Statut");
 
                 while (reader.Read())
                 {
                     table.AddRow(
-                        reader["commande_id"].ToString()!,
-                        reader["type_plat"].ToString()!,
-                        reader["nationalite"].ToString()!,
-                        reader["quantite"].ToString()!,
-                        $"{Convert.ToDecimal(reader["prix_par_personne"]):0.00}",
+                        reader["commande_id"].ToString(),
+                        reader["plat_name"].ToString(),
+                        reader["type_plat"].ToString(),
+                        reader["nationalite"].ToString(),
+                        reader["quantite"].ToString(),
+                        string.Format("{0:0.00}", Convert.ToDecimal(reader["prix_par_personne"])),
                         Convert.ToDateTime(reader["date_commande"]).ToString("yyyy-MM-dd HH:mm"),
-                        reader["statut"].ToString()!
+                        reader["statut"].ToString()
                     );
                 }
 
@@ -249,7 +250,11 @@ namespace ParisShell.Commands
                 AnsiConsole.MarkupLine("[bold underline green]Vos commandes[/]");
                 AnsiConsole.Write(table);
             }
+
+            reader.Close();
+            cmd.Dispose();
         }
+
 
         private void CancelMyOrder()
         {
@@ -271,7 +276,7 @@ namespace ParisShell.Commands
 
                 MySqlCommand checkCmd = new MySqlCommand(checkQuery, _sqlService.GetConnection());
                 checkCmd.Parameters.AddWithValue("@oid", saisie);
-                checkCmd.Parameters.AddWithValue("@cid", _session.CurrentUser!.Id);
+                checkCmd.Parameters.AddWithValue("@cid", _session.CurrentUser.Id);
 
                 MySqlDataReader reader = checkCmd.ExecuteReader();
                 if (reader.Read())
@@ -289,6 +294,7 @@ namespace ParisShell.Commands
                 reader.Close();
                 checkCmd.Dispose();
             }
+
             bool confirm = true;
             if (statut != "EN_COURS")
             {
@@ -302,7 +308,7 @@ namespace ParisShell.Commands
                         .Title("Are you sure you want to cancel this order?")
                         .AddChoices("Yes", "No")
                 );
-                
+
                 if (confirmation == "No")
                 {
                     AnsiConsole.MarkupLine("[yellow]Cancellation aborted by the user.[/]");
@@ -330,6 +336,7 @@ namespace ParisShell.Commands
                     cancelCmd.Parameters.AddWithValue("@oid", orderId);
                     cancelCmd.ExecuteNonQuery();
                     cancelCmd.Dispose();
+
                     AnsiConsole.Clear();
                     AnsiConsole.MarkupLine("[yellow]Cancellation done.[/]");
                 }

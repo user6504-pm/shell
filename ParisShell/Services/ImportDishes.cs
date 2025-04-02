@@ -32,8 +32,6 @@ public class ImportDishes
         Random rand = new Random();
         int ligne = 2;
         int indexCuisinier = 0;
-        float min = 10.00f;
-        float max = 20.00f;
         while (ligne <= nbLignes && indexCuisinier < cuisiniers.Count)
         {
             int cuisinierId = cuisiniers[indexCuisinier];
@@ -44,6 +42,7 @@ public class ImportDishes
             {
                 try
                 {
+                    string platName = feuille.Cells[ligne, 11].Text;
                     string typePlat = feuille.Cells[ligne, 2].Text;
                     int nbPersonnes = int.Parse(feuille.Cells[ligne, 3].Text);
                     decimal prix = decimal.Parse(feuille.Cells[ligne, 6].Text, new CultureInfo("fr-FR"));
@@ -56,12 +55,13 @@ public class ImportDishes
                     string photo = feuille.Cells[ligne, 10].Text;
 
                     string query = @"INSERT INTO plats 
-                (user_id, type_plat, nb_personnes,quantite, date_fabrication, date_peremption, 
+                (user_id, plat_name, type_plat, nb_personnes,quantite, date_fabrication, date_peremption, 
                 prix_par_personne, nationalite, regime_alimentaire, ingredients, photo)
-                VALUES (@uid, @type, @nb,@quantite, @fab, @per, @prix, @nat, @regime, @ing, @photo);";
+                VALUES (@uid,@platName, @type, @nb,@quantite, @fab, @per, @prix, @nat, @regime, @ing, @photo);";
 
                     MySqlCommand insertCmd = new MySqlCommand(query, maConnexion);
                     insertCmd.Parameters.AddWithValue("@uid", cuisinierId);
+                    insertCmd.Parameters.AddWithValue("@platName", platName);
                     insertCmd.Parameters.AddWithValue("@type", typePlat);
                     insertCmd.Parameters.AddWithValue("@nb", nbPersonnes);
                     insertCmd.Parameters.AddWithValue("@quantite", quantite);
