@@ -23,7 +23,6 @@ namespace ParisShell.Commands {
             _sqlService.Disconnect();
             Shell.PrintSucces("Disconnected from MySQL.");
 
-            // Clear user session
             if (_session.CurrentUser != null) {
                 string user = _session.CurrentUser.Email;
                 _session.CurrentUser = null;
