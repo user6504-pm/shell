@@ -173,6 +173,12 @@ namespace ParisShell.Graph {
             return false;
         }
 
+        /// <summary>
+        /// Implémentation de l'algorithme de Dijkstra pour trouver les distances minimales depuis un noeud source
+        /// - Ne fonctionne qu'avec des poids positifs
+        /// - Utilise une approche gloutonne (toujours étendre le chemin le plus prometteur)
+        /// - Complexité O(n²)
+        /// </summary>
         public Dictionary<Noeud<T>, int> DijkstraDistances(Noeud<T> depart) 
         {
             if (!noeuds.Contains(depart))
@@ -183,6 +189,7 @@ namespace ParisShell.Graph {
             Dictionary<Noeud<T>, int> distances = new Dictionary<Noeud<T>, int>();
             Dictionary<Noeud<T>, bool> visites = new Dictionary<Noeud<T>, bool>();
 
+            // Toutes les distances à +∞ sauf le départ
             foreach (var noeud in noeuds)
             {
                 distances[noeud] = int.MaxValue;
@@ -190,8 +197,9 @@ namespace ParisShell.Graph {
             }
             distances[depart] = 0;
 
-            while (visites.Values.Contains(false))
+            while (visites.Values.Contains(false)) // Tant qu'il reste des noeuds non visités
             {
+                // Sélection du noeud non visité avec distance minimale
                 Noeud<T> noeudActuel = null;
                 int distanceMin = int.MaxValue;
 
@@ -204,13 +212,14 @@ namespace ParisShell.Graph {
                     }
                 }
 
-                if (noeudActuel == null)
+                if (noeudActuel == null) // Cas des noeuds inaccessibles
                 {
                     break;
                 }
 
                 visites[noeudActuel] = true;
 
+                //Mise à jour des distances des voisins
                 foreach (var lien in liens)
                 {
                     if (lien.Noeud1 == noeudActuel)
@@ -222,20 +231,14 @@ namespace ParisShell.Graph {
                             distances[voisin] = nouvelleDistance;
                         }
                     }
-                    else if (lien.Noeud2 == noeudActuel)
-                    {
-                        Noeud<T> voisin = lien.Noeud1;
-                        int nouvelleDistance = distances[noeudActuel] + lien.Poids;
-                        if (nouvelleDistance < distances[voisin])
-                        {
-                            distances[voisin] = nouvelleDistance;
-                        }
-                    }
                 }
             }
             return distances;
         }
 
+        /// <summary>
+        /// Trouve le chemin le plus court entre deux noeuds avec Dijkstra
+        /// </summary>
         public List<Noeud<T>> DijkstraCheminPlusCourt(Noeud<T> depart, Noeud<T> arrivee) //Liste des noeuds traversé par le plus court chemin
         {
             if (!noeuds.Contains(depart))
@@ -268,6 +271,7 @@ namespace ParisShell.Graph {
                 Noeud<T> noeudActuel = null;
                 int distanceMin = int.MaxValue;
 
+                // Sélection du noeud non visité le plus proche
                 foreach (var noeud in noeuds)
                 {
                     if (!visites.Contains(noeud) && distances[noeud] < distanceMin)
@@ -282,6 +286,7 @@ namespace ParisShell.Graph {
 
                 visites.Add(noeudActuel);
 
+                // Mise à jour des distances et prédécesseurs
                 foreach (var lien in liens)
                 {
                     if (lien.Noeud1 == noeudActuel)
@@ -291,17 +296,7 @@ namespace ParisShell.Graph {
                         if (nouvelleDistance < distances[voisin])
                         {
                             distances[voisin] = nouvelleDistance;
-                            precedents[voisin] = noeudActuel;
-                        }
-                    }
-                    else if (lien.Noeud2 == noeudActuel)
-                    {
-                        Noeud<T> voisin = lien.Noeud1;
-                        int nouvelleDistance = distances[noeudActuel] + lien.Poids;
-                        if (nouvelleDistance < distances[voisin])
-                        {
-                            distances[voisin] = nouvelleDistance;
-                            precedents[voisin] = noeudActuel;
+                            precedents[voisin] = noeudActuel; // On retient le prédécesseur
                         }
                     }
                 }
@@ -312,6 +307,7 @@ namespace ParisShell.Graph {
                 return null; // Aucun chemin trouvé
             }
 
+            // Reconstruction du chemin
             List<Noeud<T>> chemin = new List<Noeud<T>>();
             for (Noeud<T> noeud = arrivee; noeud != null; noeud = precedents[noeud])
             {
@@ -320,8 +316,12 @@ namespace ParisShell.Graph {
             return chemin; 
         }
 
-       
-
+        /// <summary>
+        /// Implémentation de Bellman-Ford pour calculer les distances depuis une source
+        /// - Gère les poids négatifs (mais pas les cycles négatifs accessibles)
+        /// - Complexité O(n*m)
+        /// - Basé sur le principe de relaxation des arêtes
+        /// </summary>
         public Dictionary<Noeud<T>, int> BellmanFordDistance(Noeud<T> depart) //Dictio de distance par rapport à un noeud (départ)
         {
             if (!noeuds.Contains(depart))
@@ -336,6 +336,7 @@ namespace ParisShell.Graph {
             }
             distances[depart] = 0;
 
+            //Relaxation des arêtes
             for (int i = 0; i < noeuds.Count - 1; i++)
             {
                 foreach (var lien in liens)
@@ -343,10 +344,6 @@ namespace ParisShell.Graph {
                     if (distances[lien.Noeud1] != int.MaxValue && distances[lien.Noeud1] + lien.Poids < distances[lien.Noeud2])
                     {
                         distances[lien.Noeud2] = distances[lien.Noeud1] + lien.Poids;
-                    }
-                    if (distances[lien.Noeud2] != int.MaxValue && distances[lien.Noeud2] + lien.Poids < distances[lien.Noeud1])
-                    {
-                        distances[lien.Noeud1] = distances[lien.Noeud2] + lien.Poids;
                     }
                 }
             }
@@ -363,6 +360,9 @@ namespace ParisShell.Graph {
             return distances;
         }
 
+        /// <summary>
+        /// Calcule le plus court chemin entre deux noeuds en utilisant l'algorithme de Bellman-Ford
+        /// </summary>
         public List<Noeud<T>> BellmanFordCheminPlusCourt(Noeud<T> depart, Noeud<T> arrivee) //Liste des noeuds traversé par le plus court chemin
         {
             if (!noeuds.Contains(depart))
@@ -383,6 +383,7 @@ namespace ParisShell.Graph {
             Dictionary<Noeud<T>, int> distances = new Dictionary<Noeud<T>, int>();
             Dictionary<Noeud<T>, Noeud<T>> predecesseurs = new Dictionary<Noeud<T>, Noeud<T>>();
 
+            // Toutes les distances à +∞, prédécesseurs à null
             foreach (Noeud<T> noeud in noeuds)
             {
                 distances[noeud] = int.MaxValue;
@@ -390,6 +391,7 @@ namespace ParisShell.Graph {
             }
             distances[depart] = 0;
 
+            //Relaxation des arêtes
             for (int i = 0; i < noeuds.Count - 1; i++)
             {
                 foreach (var lien in liens)
@@ -398,11 +400,6 @@ namespace ParisShell.Graph {
                     {
                         distances[lien.Noeud2] = distances[lien.Noeud1] + lien.Poids;
                         predecesseurs[lien.Noeud2] = lien.Noeud1;
-                    }
-                    if (distances[lien.Noeud2] != int.MaxValue && distances[lien.Noeud2] + lien.Poids < distances[lien.Noeud1])
-                    {
-                        distances[lien.Noeud1] = distances[lien.Noeud2] + lien.Poids;
-                        predecesseurs[lien.Noeud1] = lien.Noeud2;
                     }
                 }
             }
@@ -416,6 +413,7 @@ namespace ParisShell.Graph {
                 }
             }
 
+            //Reconstruction du chemin
             List<Noeud<T>> chemin = new List<Noeud<T>>();
             for (Noeud<T> noeud = arrivee; noeud != null; noeud = predecesseurs[noeud])
             {
