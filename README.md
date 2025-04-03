@@ -1,5 +1,5 @@
 
-# ParisShell Technical Documentation
+# ParisShell Documentation
 
 ## Overview
 
@@ -209,5 +209,12 @@ The project uses `Spectre.Console` to enhance terminal UX through:
 
 ## Authors
 
-- Designed and developed for the ParisShell project.
-- Contributions from students and staff of the 2025 Computer Science curriculum.
+  - **Antoine GROUSSARD** - *Lead Developer and Creator* - [user7845-pm](https://github.com/user7845-pm)
+  - **Lucie GRANDET** - *Lead Developer and Creator* - [lvciie](https://github.com/lvciie)
+  - **Tristan LIMOUSIN** - *Lead Developer and Creator* - [user6504-pm](https://github.com/user6504-pm)
+
+---
+
+## More informations
+
+- For more information, please see the 'Documentation' file.
