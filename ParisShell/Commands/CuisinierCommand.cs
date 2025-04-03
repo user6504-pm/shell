@@ -27,7 +27,7 @@ namespace ParisShell.Commands
 
             if (args.Length == 0)
             {
-                Shell.PrintWarning("Usage: cook [clients|stats|dishoftheday|sales|dishes|newdish|addquantity]");
+                Shell.PrintWarning("Usage: cook clients | stats | dishoftheday| sales | dishes | newdish | addquantity");
                 return;
             }
 

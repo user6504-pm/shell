@@ -30,7 +30,7 @@ namespace ParisShell.Commands {
 
             if (args.Length == 0)
             {
-                Shell.PrintWarning("Usage: client [newc | orders | cancel | order-travel {id}]");
+                Shell.PrintWarning("Usage: client newc | orders | cancel | order-travel (id)");
                 return;
             }
 

@@ -29,7 +29,7 @@ internal class HelpCommand : ICommand {
             ["ADMIN"] = new() { "user add", "user update", "user assign-role", "user list", "analytics" },
             ["BOZO"] = new() { "user add", "user update", "user assign-role", "user list", "analytics" },
             ["CUISINIER"] = new() { "cook clients", "cook stats", "cook dishoftheday", "cook sales","cook dishes","cook newdish" },
-            ["CLIENT"] = new() { "showtable", "showtables","client newc","client orders","client cancel"}
+            ["CLIENT"] = new() { "showtable", "showtables","client newc","client orders","client cancel","client order-travel"}
         };
 
         var table = new Table()
@@ -58,23 +58,28 @@ internal class HelpCommand : ICommand {
     }
 
     private string GetCommandDescription(string cmd) => cmd switch {
-        "login" => "Can login to an user account",
-        "clear" => "Clears the screen.",
-        "disconnect" => "Disconnects from the MySQL server.",
-        "showtables" => "Lists accessible tables based on your role.",
-        "showtable" => "Displays the content of a table.",
-        "logout" => "Logs out from the current user.",
+        "login" => "Log in to a user account.",
+        "clear" => "Clear the screen.",
+        "disconnect" => "Disconnect from the MySQL server.",
+        "showtables" => "List accessible tables based on your role.",
+        "showtable" => "Display the content of a table.",
+        "logout" => "Log out of the current user account.",
         "user add" => "Add a new user (admin only).",
-        "user update" => "Update a user's info.",
+        "user update" => "Update a user's information.",
         "user assign-role" => "Assign a role to a user.",
-        "user list" => "List users and sort them.",
-        "analytics" => "Show data analysis: orders, averages, client stats.",
+        "user list" => "List and sort users.",
+        "analytics" => "Show data analysis: orders, averages, client statistics.",
         "cook clients" => "List clients served by this chef.",
         "cook stats" => "View dish statistics.",
         "cook dishoftheday" => "Display today’s dish.",
         "cook sales" => "Show total sales by dish.",
-        "cook dishes" => "Show total dishes by the cook",
-        "cook newdish " => "Create a new dish for the cook",
+        "cook dishes" => "Show total dishes made by the cook.",
+        "cook newdish" => "Create a new dish.",
+        "client order-travel" => "Show the path of the order on the map.",
+        "client newc" => "Place a new order.",
+        "client cancel" => "Cancel an order.",
+        "client orders" => "Show the client's orders.",
+        "cook addquantity" => "Add quantity to a dish.",
         _ => "No description available."
     };
 }
