@@ -34,6 +34,7 @@ namespace ParisShell {
         }
 
         public void Run() {
+            AnsiConsole.Clear();
 
             AnsiConsole.MarkupLine(@"
 [white] ____    ______  ____    ______  ____                             [/]

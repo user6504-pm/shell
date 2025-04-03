@@ -102,11 +102,10 @@ internal class AnalyticsCommand : ICommand
 
         using var cmd = new MySqlCommand(query, _sqlService.GetConnection());
         var result = cmd.ExecuteScalar();
-        AnsiConsole.MarkupLine($"[green]💶 Average order price:[/] [bold]{result:0.00} €[/]");
+        AnsiConsole.MarkupLine($"[green]Average order price:[/] [bold]{result:0.00} €[/]");
     }
 
-    private void ShowAverageComptesClients()
-    {
+    private void ShowAverageComptesClients() {
         string query = "SELECT COUNT(*) FROM clients";
         using var cmd = new MySqlCommand(query, _sqlService.GetConnection());
         var count = Convert.ToInt32(cmd.ExecuteScalar());
@@ -116,7 +115,16 @@ internal class AnalyticsCommand : ICommand
         var totalUsers = Convert.ToInt32(cmd2.ExecuteScalar());
 
         double ratio = (double)count / totalUsers * 100;
-        AnsiConsole.MarkupLine($"[blue]👥 Client account percentage:[/] [bold]{ratio:0.00}%[/]");
+
+        var chart = new BarChart()
+            .Width(60)
+            .Label("[white]Client account percentage (%)[/]")
+            .CenterLabel()
+            .AddItem("Clients", (float)ratio, new Color(0x8B, 0x0A, 0x50))
+            .AddItem("Non-clients", 100f - (float)ratio, Color.White);
+
+
+        AnsiConsole.Write(chart);
     }
 
     private void ShowCommandesClientParNationaliteEtPeriode()
