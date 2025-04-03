@@ -21,7 +21,7 @@ namespace ParisShell.Commands {
             {
                 Console.CursorVisible = false;
 
-                string mdp = AnsiConsole.Prompt(
+                string pwd = AnsiConsole.Prompt(
                     new TextPrompt<string>("MySQL password [grey](root)[/]:")
                         .PromptStyle("red")
                         .Secret(' ')
@@ -33,7 +33,7 @@ namespace ParisShell.Commands {
                     PORT = "3306",
                     UID = "root",
                     DATABASE = "Livininparis_219",
-                    PASSWORD = mdp
+                    PASSWORD = pwd
                 };
 
                 _sqlService.Connect(config);

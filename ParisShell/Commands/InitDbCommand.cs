@@ -14,22 +14,22 @@ namespace ParisShell.Commands {
 
             Console.CursorVisible = false;
 
-            string mdp = AnsiConsole.Prompt(
+            string pwd = AnsiConsole.Prompt(
                 new TextPrompt<string>("MySQL password [grey](root)[/]:")
                 .PromptStyle("red")
                 .Secret(' '));
 
-            string cheminExcel = "../../../../Infos_Excel/MetroParis.xlsx";
-            FileInfo fichierExcel = new FileInfo(cheminExcel);
+            string ExcelPath = "../../../../Infos_Excel/MetroParis.xlsx";
+            FileInfo ExcelFile = new FileInfo(ExcelPath);
 
-            MySqlConnection maConnexion = null;
+            MySqlConnection MyConnection  = null;
             try {
-                string connexionString = "SERVER=localhost;PORT=3306;" +
+                string ConnectionString = "SERVER=localhost;PORT=3306;" +
                                          "DATABASE=sys;" +
-                                         "UID=root;PASSWORD=" + mdp;
+                                         "UID=root;PASSWORD=" + pwd;
 
-                maConnexion = new MySqlConnection(connexionString);
-                maConnexion.Open();
+                MyConnection = new MySqlConnection(ConnectionString);
+                MyConnection.Open();
                 Shell.PrintSucces("Connected to MySQL.");
             }
             catch (MySqlException e) {
@@ -129,7 +129,7 @@ namespace ParisShell.Commands {
 
             foreach (var query in tableQueries) {
                 try {
-                    using var command = maConnexion.CreateCommand();
+                    using var command = MyConnection.CreateCommand();
                     command.CommandText = query;
                     command.ExecuteNonQuery();
                 }
@@ -147,16 +147,16 @@ namespace ParisShell.Commands {
                         ctx.Spinner(Spinner.Known.Dots2);
                         ctx.SpinnerStyle(Style.Parse("green"));
                         ctx.Status("Importing metro stations...");
-                        ImportStations.ImportStationsMySql(cheminExcel, maConnexion);
+                        ImportStations.ImportStationsMySql(ExcelPath, MyConnection);
 
                         ctx.Status("Importing metro connections...");
-                        Connexions.ConnexionsSql(cheminExcel, maConnexion);
+                        Connexions.ConnexionsSql(ExcelPath, MyConnection);
 
                         ctx.Status("Importing users...");
-                        ImportUser.ImportUtilisateursMySql("../../../../Infos_Excel/user.xlsx", maConnexion);
+                        ImportUser.ImportUtilisateursMySql("../../../../Infos_Excel/user.xlsx", MyConnection);
 
                         ctx.Status("Importing dishes...");
-                        ImportDishes.ImportDishesSQL("../../../../Infos_Excel/plats_simules_corrige.xlsx",maConnexion); 
+                        ImportDishes.ImportDishesSQL("../../../../Infos_Excel/plats_simules_corrige.xlsx", MyConnection); 
                     
 
                         Shell.PrintSucces("Excel data imported successfully.");
@@ -166,7 +166,7 @@ namespace ParisShell.Commands {
                     }
                 });
 
-            maConnexion.Close();
+            MyConnection.Close();
             Shell.PrintWarning("Connection closed.");
         }
     }

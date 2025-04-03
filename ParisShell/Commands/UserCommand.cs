@@ -61,29 +61,29 @@ internal class UserCommand : ICommand {
     }
 
     private void AddUser() {
-        var prenom = Ask("First name");
-        var nom = Ask("Last name");
-        var adresse = Ask("Address");
-        var tel = Ask("Phone");
+        var firstname = Ask("First name");
+        var lastname = Ask("Last name");
+        var adress = Ask("Address");
+        var phone = Ask("Phone");
         var email = Ask("Email");
-        var mdp = AskSecret("Password");
-        var metro = AnsiConsole.Ask<int>("Closest metro station ID:");
+        var pwd = AskSecret("Password");
+        var subway = AnsiConsole.Ask<int>("Closest metro station ID:");
 
         int userId;
         using (var cmd = new MySqlCommand("INSERT INTO users (nom, prenom, adresse, telephone, email, mdp, metroproche) VALUES (@n, @p, @a, @t, @e, @m, @mp); SELECT LAST_INSERT_ID();", _sqlService.GetConnection())) {
-            cmd.Parameters.AddWithValue("@n", nom);
-            cmd.Parameters.AddWithValue("@p", prenom);
-            cmd.Parameters.AddWithValue("@a", adresse);
-            cmd.Parameters.AddWithValue("@t", tel);
+            cmd.Parameters.AddWithValue("@n", firstname);
+            cmd.Parameters.AddWithValue("@p", lastname);
+            cmd.Parameters.AddWithValue("@a", adress);
+            cmd.Parameters.AddWithValue("@t", phone);
             cmd.Parameters.AddWithValue("@e", email);
-            cmd.Parameters.AddWithValue("@m", mdp);
-            cmd.Parameters.AddWithValue("@mp", metro);
+            cmd.Parameters.AddWithValue("@m", pwd);
+            cmd.Parameters.AddWithValue("@mp", subway);
             userId = Convert.ToInt32(cmd.ExecuteScalar());
         }
 
         string role = SelectRole();
         InsertUserRole(userId, role);
-        Shell.PrintSucces($"User {prenom} {nom} successfully created with role '{role}'.");
+        Shell.PrintSucces($"User {firstname} {lastname} successfully created with role '{role}'.");
 
         if (role.ToLower() == "client")
             AddClient(userId);
@@ -97,19 +97,19 @@ internal class UserCommand : ICommand {
             return;
         }
 
-        var prenom = Ask("New first name");
-        var nom = Ask("New last name");
-        var adresse = Ask("New address");
+        var firstname = Ask("New first name");
+        var lastname = Ask("New last name");
+        var adress = Ask("New address");
         var tel = Ask("Phone");
-        var mdp = AskSecret("New password");
+        var pwd = AskSecret("New password");
 
         using var cmd = new MySqlCommand(@"
         UPDATE users SET nom=@n, prenom=@p, adresse=@a, telephone=@t, mdp=@m WHERE user_id=@id", _sqlService.GetConnection());
-        cmd.Parameters.AddWithValue("@n", nom);
-        cmd.Parameters.AddWithValue("@p", prenom);
-        cmd.Parameters.AddWithValue("@a", adresse);
+        cmd.Parameters.AddWithValue("@n", lastname);
+        cmd.Parameters.AddWithValue("@p", firstname);
+        cmd.Parameters.AddWithValue("@a", adress);
         cmd.Parameters.AddWithValue("@t", tel);
-        cmd.Parameters.AddWithValue("@m", mdp);
+        cmd.Parameters.AddWithValue("@m", pwd);
         cmd.Parameters.AddWithValue("@id", id);
 
         int rows = cmd.ExecuteNonQuery();
@@ -217,8 +217,8 @@ internal class UserCommand : ICommand {
     }
     private void GetUserId()
     {
-        var nom = Ask("Last name");
-        var prenom = Ask("First name");
+        var lastname = Ask("Last name");
+        var firstname = Ask("First name");
 
         string query = @"
     SELECT user_id AS 'User ID', email AS 'Email'
@@ -226,8 +226,8 @@ internal class UserCommand : ICommand {
     WHERE nom LIKE @n AND prenom LIKE @p";
 
         using var cmd = new MySqlCommand(query, _sqlService.GetConnection());
-        cmd.Parameters.AddWithValue("@n", $"%{nom}%");
-        cmd.Parameters.AddWithValue("@p", $"%{prenom}%");
+        cmd.Parameters.AddWithValue("@n", $"%{lastname}%");
+        cmd.Parameters.AddWithValue("@p", $"%{firstname}%");
 
         using var reader = cmd.ExecuteReader();
 
@@ -250,8 +250,8 @@ internal class UserCommand : ICommand {
         else
         {
             _sqlService.ExecuteAndDisplay(query, new Dictionary<string, object> {
-            { "@n", $"%{nom}%" },
-            { "@p", $"%{prenom}%" }
+            { "@n", $"%{lastname}%" },
+            { "@p", $"%{firstname}%" }
         });
         }
     }

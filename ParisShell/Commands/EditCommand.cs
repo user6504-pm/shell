@@ -74,21 +74,21 @@ namespace ParisShell.Commands
 
         private void UpdateFull(int id)
         {
-            var prenom = Ask("New first name");
-            var nom = Ask("New last name");
-            var adresse = Ask("New address");
-            var tel = Ask("Phone");
-            var mdp = AskSecret("New password");
+            var firstname = Ask("New first name");
+            var lastname = Ask("New last name");
+            var adress = Ask("New address");
+            var phone = Ask("Phone");
+            var pwd = AskSecret("New password");
 
             using var cmd = new MySqlCommand(@"
                 UPDATE users 
                 SET nom=@n, prenom=@p, adresse=@a, telephone=@t, mdp=@m 
                 WHERE user_id=@id", _sqlService.GetConnection());
-            cmd.Parameters.AddWithValue("@n", nom);
-            cmd.Parameters.AddWithValue("@p", prenom);
-            cmd.Parameters.AddWithValue("@a", adresse);
-            cmd.Parameters.AddWithValue("@t", tel);
-            cmd.Parameters.AddWithValue("@m", mdp);
+            cmd.Parameters.AddWithValue("@n", firstname);
+            cmd.Parameters.AddWithValue("@p", lastname);
+            cmd.Parameters.AddWithValue("@a", adress);
+            cmd.Parameters.AddWithValue("@t", phone);
+            cmd.Parameters.AddWithValue("@m", pwd);
             cmd.Parameters.AddWithValue("@id", id);
 
             int rows = cmd.ExecuteNonQuery();

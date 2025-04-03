@@ -21,12 +21,12 @@ internal class RegisterCommand : ICommand {
 
         AnsiConsole.MarkupLine("[bold underline deeppink4_2]User Registration[/]");
 
-        string prenom = Ask("First name");
-        string nom = Ask("Last name");
-        string adresse = Ask("Address");
-        string tel = Ask("Phone");
+        string firstname = Ask("First name");
+        string lastname = Ask("Last name");
+        string adress = Ask("Address");
+        string phone = Ask("Phone");
         string email = Ask("Email");
-        string mdp = AnsiConsole.Prompt(new TextPrompt<string>("Password:")
+        string pwd = AnsiConsole.Prompt(new TextPrompt<string>("Password:")
                                         .PromptStyle("red").Secret(' '));
         int metro = AnsiConsole.Ask<int>("Closest metro station ID:");
 
@@ -34,12 +34,12 @@ internal class RegisterCommand : ICommand {
         using (var cmd = new MySqlCommand(
             "INSERT INTO users (nom, prenom, adresse, telephone, email, mdp, metroproche) VALUES (@n, @p, @a, @t, @e, @m, @mp); SELECT LAST_INSERT_ID();",
             _sqlService.GetConnection())) {
-            cmd.Parameters.AddWithValue("@n", nom);
-            cmd.Parameters.AddWithValue("@p", prenom);
-            cmd.Parameters.AddWithValue("@a", adresse);
-            cmd.Parameters.AddWithValue("@t", tel);
+            cmd.Parameters.AddWithValue("@n", firstname);
+            cmd.Parameters.AddWithValue("@p", lastname);
+            cmd.Parameters.AddWithValue("@a", adress);
+            cmd.Parameters.AddWithValue("@t", phone);
             cmd.Parameters.AddWithValue("@e", email);
-            cmd.Parameters.AddWithValue("@m", mdp);
+            cmd.Parameters.AddWithValue("@m", pwd);
             cmd.Parameters.AddWithValue("@mp", metro);
             userId = Convert.ToInt32(cmd.ExecuteScalar());
         }
