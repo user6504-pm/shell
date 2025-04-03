@@ -9,7 +9,7 @@ using ParisShell.Models;
 
 namespace ParisShell.Graph {
     internal class GraphLoader {
-        public static void ConstruireEtAfficherGraph(MySqlConnection connexion, string nomFichier = "graphe_metro.svg") {
+        public static void ConstruireEtAfficherGraph(MySqlConnection connexion, int idDepart = 1, int idArrivee = 43, string nomFichier = "graphe_metro.svg") {
             Graph<StationData> graphe = new Graph<StationData>();
             Dictionary<int, Noeud<StationData>> noeudsDict = new Dictionary<int, Noeud<StationData>>();
 
@@ -59,8 +59,6 @@ namespace ParisShell.Graph {
                     try {
                         ctx.Spinner(Spinner.Known.Flip);
                         ctx.SpinnerStyle(Style.Parse("green"));
-                        int idDepart = 101;
-                        int idArrivee = 217;
 
                         if (!noeudsDict.TryGetValue(idDepart, out var noeudDepart)) {
                             Shell.PrintError("Station de départ introuvable.");

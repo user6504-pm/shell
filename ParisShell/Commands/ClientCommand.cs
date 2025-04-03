@@ -3,7 +3,9 @@ using Mysqlx.Crud;
 using ParisShell.Graph;
 using ParisShell.Models;
 using ParisShell.Services;
+using SkiaSharp;
 using Spectre.Console;
+using System.Diagnostics;
 
 namespace ParisShell.Commands {
     internal class ClientCommand : ICommand
@@ -28,7 +30,7 @@ namespace ParisShell.Commands {
 
             if (args.Length == 0)
             {
-                Shell.PrintWarning("Usage: client [newc | orders | cancel]");
+                Shell.PrintWarning("Usage: client [newc | orders | cancel | order-travel {id}]");
                 return;
             }
 
@@ -43,8 +45,77 @@ namespace ParisShell.Commands {
                 case "cancel":
                     CancelMyOrder();
                 break;
+                case "order-travel":
+                    OrderTravel(args);
+                break;
             }
         }
+
+        private void OrderTravel(string[] args) {
+            if (args.Length < 2 || !int.TryParse(args[1], out int commandeId)) {
+                Shell.PrintError("Usage: client order-travel {commande_id}");
+                return;
+            }
+
+            if (!_sqlService.IsConnected || !_session.IsAuthenticated) {
+                Shell.PrintError("You must be connected to view travel path.");
+                return;
+            }
+
+            int clientId = _session.CurrentUser.Id;
+
+            string query = @"
+        SELECT u.metroproche AS client_station, cu.metroproche AS cook_station
+        FROM commandes c
+        JOIN plats p ON c.plat_id = p.plat_id
+        JOIN users cu ON cu.user_id = p.user_id
+        JOIN users u ON u.user_id = c.client_id
+        WHERE c.commande_id = @id AND c.client_id = @clientId";
+
+            using var cmd = new MySqlCommand(query, _sqlService.GetConnection());
+            cmd.Parameters.AddWithValue("@id", commandeId);
+            cmd.Parameters.AddWithValue("@clientId", clientId);
+
+            using var reader = cmd.ExecuteReader();
+            if (!reader.Read()) {
+                Shell.PrintError("Commande introuvable ou non liée à votre compte.");
+                return;
+            }
+
+            int cookStationId = reader.GetInt32("cook_station");
+            int clientStationId = reader.GetInt32("client_station");
+
+            reader.Close();
+
+            Graph<StationData> graphe = GraphLoader.Construire(_sqlService.GetConnection());
+            var noeudsDict = graphe.ObtenirNoeuds().ToDictionary(n => n.Id);
+
+            if (!noeudsDict.TryGetValue(cookStationId, out var noeudDepart) ||
+                !noeudsDict.TryGetValue(clientStationId, out var noeudArrivee)) {
+                Shell.PrintError("Impossible de trouver les stations associées.");
+                return;
+            }
+
+            var chemin = graphe.BellmanFordCheminPlusCourt(noeudDepart, noeudArrivee);
+
+            if (chemin == null || chemin.Count == 0) {
+                Shell.PrintError("Aucun chemin trouvé entre le cuisinier et le client.");
+                return;
+            }
+
+            string nomFichier = $"commande_{commandeId}_trajet.svg";
+            graphe.ExporterSvg(nomFichier, chemin);
+            if (File.Exists(nomFichier)) {
+                Process.Start(new ProcessStartInfo {
+                    FileName = nomFichier,
+                    UseShellExecute = true
+                });
+            }
+            else {
+                Console.WriteLine("SVG file not found.");
+            }
+        }
+
 
         private int GetStationIdFromUser(int userId) {
             const string query = @"
