@@ -422,7 +422,66 @@ namespace ParisShell.Graph {
             }
             return chemin;
         }
+        public (Dictionary<(Noeud<T>, Noeud<T>), int> distances, Dictionary<(Noeud<T>, Noeud<T>), Noeud<T>> predecessors) FloydWarshallComplet()
+        {
+            var distances = new Dictionary<(Noeud<T>, Noeud<T>), int>();
+            var predecessors = new Dictionary<(Noeud<T>, Noeud<T>), Noeud<T>>();
 
+            foreach (var u in noeuds)
+            {
+                foreach (var v in noeuds)
+                {
+                    if (u == v)
+                    {
+                        distances[(u, v)] = 0;
+                        predecessors[(u, v)] = null;
+                    }
+                    else
+                    {
+                        distances[(u, v)] = int.MaxValue;
+                        predecessors[(u, v)] = null;
+                    }
+                }
+            }
+
+            foreach (var lien in liens)
+            {
+                distances[(lien.Noeud1, lien.Noeud2)] = lien.Poids;
+                predecessors[(lien.Noeud1, lien.Noeud2)] = lien.Noeud1;
+
+                distances[(lien.Noeud2, lien.Noeud1)] = lien.Poids;
+                predecessors[(lien.Noeud2, lien.Noeud1)] = lien.Noeud2;
+            }
+
+            foreach (var k in noeuds)
+            {
+                foreach (var i in noeuds)
+                {
+                    foreach (var j in noeuds)
+                    {
+                        if (distances[(i, k)] != int.MaxValue && distances[(k, j)] != int.MaxValue)
+                        {
+                            int nouvelleDistance = distances[(i, k)] + distances[(k, j)];
+                            if (nouvelleDistance < distances[(i, j)])
+                            {
+                                distances[(i, j)] = nouvelleDistance;
+                                predecessors[(i, j)] = predecessors[(k, j)];
+                            }
+                        }
+                    }
+                }
+            }
+
+            foreach (var noeud in noeuds)
+            {
+                if (distances[(noeud, noeud)] < 0)
+                {
+                    throw new InvalidOperationException("Le graphe contient un cycle de poids négatif.");
+                }
+            }
+
+            return (distances, predecessors);
+        }
         public Dictionary<Noeud<T>, int> FloydWarshallDistances(Noeud<T> depart)
         {
             var (distances, predecessors) = FloydWarshallComplet();
