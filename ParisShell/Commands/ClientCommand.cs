@@ -347,8 +347,6 @@ namespace ParisShell.Commands {
                         reader["statut"].ToString()
                     );
                 }
-
-                AnsiConsole.Clear();
                 AnsiConsole.MarkupLine("[bold underline green]Vos commandes[/]");
                 AnsiConsole.Write(table);
             }
