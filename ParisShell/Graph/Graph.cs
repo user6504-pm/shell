@@ -172,7 +172,7 @@ namespace ParisShell.Graph {
 
             return false;
         }
-        public Dictionary<Noeud<T>, int> DijkstraDistances(Noeud<T> depart) //Dictio de distance par rapport à un noeud (départ)
+        public Dictionary<Noeud<T>, int> DijkstraDistances(Noeud<T> depart) 
         {
             if (!noeuds.Contains(depart))
             {
@@ -248,7 +248,7 @@ namespace ParisShell.Graph {
 
             if (depart == arrivee)
             {
-                return null; // pas de chemin
+                return null; 
             }
 
             Dictionary<Noeud<T>, int> distances = new Dictionary<Noeud<T>, int>();
@@ -505,9 +505,9 @@ namespace ParisShell.Graph {
             Console.WriteLine($"Degré moyen : {degreMoyen:F2}");
         }
 
-        public decimal TempsCheminStations(List<Noeud<StationData>> chemin) {
+        public int TempsCheminStations(List<Noeud<StationData>> chemin) {
             if (chemin == null || chemin.Count < 2)
-                return 0m;
+               return 5; //5 étant le temps de livraison, car même si le cuisinier et l'utilisateur sont à la même station, on prends en compte un temps
 
             const decimal vitesseKmH = 15m;
             double distanceTotaleKm = 0;
@@ -530,8 +530,8 @@ namespace ParisShell.Graph {
 
             decimal tempsHeures = (decimal)distanceTotaleKm / vitesseKmH;
             decimal tempsMinutes = tempsHeures * 60;
-
-            return Math.Round(tempsMinutes, 2);
+            int result = Convert.ToInt32(Math.Round(tempsMinutes) + 10); //10 étant le temps moyen de changement par trajet plus le temps de livraison
+            return result; 
         }
 
 

@@ -151,7 +151,7 @@ internal class UserCommand : ICommand {
                u.prenom AS 'First Name',
                u.adresse AS 'Address',
                u.email AS 'Email',
-               CONCAT(IFNULL(SUM(p.prix_par_personne * c.quantite), 0), '€') AS 'Total Amount'
+               CONCAT(IFNULL(SUM(p.prix_par_personne * c.quantite), 0)) AS 'Total Amount'
         FROM users u
         LEFT JOIN commandes c ON u.user_id = c.client_id
         LEFT JOIN plats p ON c.plat_id = p.plat_id
