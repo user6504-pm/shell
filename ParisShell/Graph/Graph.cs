@@ -435,10 +435,34 @@ namespace ParisShell.Graph {
             return result;
         }
 
-        public List<Noeud<T>> FloydWarshallCheminPlusCourt(Noeud<T> source, Noeud<T> target) //Liste des noeuds traversé par le plus court chemin
+        public List<Noeud<T>> FloydWarshallCheminPlusCourt(Noeud<T> depart, Noeud<T> arrivee)
         {
-            return null; //à compléter
+            var (distances, predecessors) = FloydWarshallComplet();
+
+            if (distances[(depart, arrivee)] == int.MaxValue)
+            {
+                return new List<Noeud<T>>(); // Aucun chemin trouvé
+            }
+
+            List<Noeud<T>> chemin = new List<Noeud<T>>();
+            Noeud<T> courant = arrivee;
+
+            // Reconstruire le chemin à partir des prédécesseurs
+            while (courant != null && !courant.Equals(depart))
+            {
+                chemin.Insert(0, courant);
+                courant = predecessors[(depart, courant)];
+            }
+
+            if (courant == null)
+            {
+                return new List<Noeud<T>>(); // Aucun chemin trouvé
+            }
+
+            chemin.Insert(0, depart);
+            return chemin;
         }
+
         public void ObtenirCaracteristiques() {
             int nombreNoeuds = noeuds.Count;
             int nombreLiens = liens.Count;
