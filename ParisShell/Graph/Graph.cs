@@ -172,6 +172,7 @@ namespace ParisShell.Graph {
 
             return false;
         }
+
         public Dictionary<Noeud<T>, int> DijkstraDistances(Noeud<T> depart) 
         {
             if (!noeuds.Contains(depart))
@@ -422,11 +423,24 @@ namespace ParisShell.Graph {
             }
             return chemin;
         }
+        /// <summary>
+        /// Implémentation complète de l'algorithme de Floyd-Warshall:
+        /// Pourquoi une méthode séparée ?
+        /// - C'est le cœur algorithmique qui fait tout le travail lourd
+        /// - Est réutilisée par les autres méthodes pour éviter la duplication de code
+        /// - Calcule TOUTES les paires de distances en une seule passe
+        /// - Respecte exactement le pseudo-code classique de Floyd-Warshall
+        /// <returns>
+        /// Tuple contenant :
+        /// - distances: matrice de toutes les distances entre toutes les paires de noeuds
+        /// - predecessors: matrice pour reconstruire les chemins
+        /// </returns>
         public (Dictionary<(Noeud<T>, Noeud<T>), int> distances, Dictionary<(Noeud<T>, Noeud<T>), Noeud<T>> predecessors) FloydWarshallComplet()
         {
             Dictionary<(Noeud<T>, Noeud<T>), int> distances = new Dictionary<(Noeud<T>, Noeud<T>), int>();
             Dictionary<(Noeud<T>, Noeud<T>), Noeud<T>> predecessors = new Dictionary<(Noeud<T>, Noeud<T>), Noeud<T>>();
 
+            // Initialisation de la diagonale à 0 et le reste à +∞
             foreach (var u in noeuds)
             {
                 foreach (var v in noeuds)
@@ -444,24 +458,28 @@ namespace ParisShell.Graph {
                 }
             }
 
+            // Remplissage avec les poids des arêtes existantes
             foreach (var lien in liens)
             {
                 distances[(lien.Noeud1, lien.Noeud2)] = lien.Poids;
                 predecessors[(lien.Noeud1, lien.Noeud2)] = lien.Noeud1;
 
+                // Pour un graphe non orienté, on ajoute l'arrête inverse
                 distances[(lien.Noeud2, lien.Noeud1)] = lien.Poids;
                 predecessors[(lien.Noeud2, lien.Noeud1)] = lien.Noeud2;
             }
 
-            foreach (var k in noeuds)
+            foreach (var k in noeuds) // Noeud intermédiaire
             {
-                foreach (var i in noeuds)
+                foreach (var i in noeuds) // Noeud source
                 {
-                    foreach (var j in noeuds)
+                    foreach (var j in noeuds) // Noeud destination
                     {
+                        // On évite les overflow en vérifiant les valeurs infinies
                         if (distances[(i, k)] != int.MaxValue && distances[(k, j)] != int.MaxValue)
                         {
                             int nouvelleDistance = distances[(i, k)] + distances[(k, j)];
+                            // Si meilleur chemin trouvé via k
                             if (nouvelleDistance < distances[(i, j)])
                             {
                                 distances[(i, j)] = nouvelleDistance;
@@ -472,6 +490,7 @@ namespace ParisShell.Graph {
                 }
             }
 
+            // n'arrivera jamais comme graphe poids de tous les noeuds > 0
             foreach (var noeud in noeuds)
             {
                 if (distances[(noeud, noeud)] < 0)
@@ -482,10 +501,21 @@ namespace ParisShell.Graph {
 
             return (distances, predecessors);
         }
+
+
+        /// <summary>
+        /// Calcule les distances les plus courtes depuis un noeud source vers tous les autres noeuds en utilisant l'algorithme de Floyd-Warshall
+        /// - Fournit une interface simple pour obtenir juste les distances depuis un noeud
+        /// - Réutilise le calcul complet pour éviter de refaire les calculs
+        /// </summary>
+        /// <param name="depart">Noeud source à partir duquel calculer les distances</param>
+        /// <returns>Dictionnaire des distances vers chaque noeud</returns>
         public Dictionary<Noeud<T>, int> FloydWarshallDistances(Noeud<T> depart)
         {
+            // On utilise la méthode complète qui fait tout le travail
             (Dictionary<(Noeud<T>, Noeud<T>), int> distances, Dictionary <(Noeud<T>, Noeud<T>), Noeud <T>> predecessors) = FloydWarshallComplet();
 
+            // On extrait juste les distances depuis le noeud de départ
             Dictionary<Noeud<T>, int> result = new Dictionary<Noeud<T>, int>();
             foreach (var noeud in noeuds)
             {
@@ -494,10 +524,18 @@ namespace ParisShell.Graph {
             return result;
         }
 
+        /// <summary>
+        /// Reconstruit le chemin le plus court entre deux noeuds en utilisant Floyd-Warshall
+        /// </summary>
+        /// <param name="depart">Noeud de départ</param>
+        /// <param name="arrivee">Noeud d'arrivée</param>
+        /// <returns>Liste des noeuds formant le chemin (vide si pas de chemin)</returns>
         public List<Noeud<T>> FloydWarshallCheminPlusCourt(Noeud<T> depart, Noeud<T> arrivee)
         {
+          
             (Dictionary<(Noeud<T>, Noeud<T>), int> distances, Dictionary<(Noeud<T>, Noeud<T>), Noeud<T>> predecessors) = FloydWarshallComplet();
 
+           
             if (distances[(depart, arrivee)] == int.MaxValue)
             {
                 return new List<Noeud<T>>(); // Aucun chemin trouvé
