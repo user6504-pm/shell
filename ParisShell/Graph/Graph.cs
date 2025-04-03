@@ -424,8 +424,8 @@ namespace ParisShell.Graph {
         }
         public (Dictionary<(Noeud<T>, Noeud<T>), int> distances, Dictionary<(Noeud<T>, Noeud<T>), Noeud<T>> predecessors) FloydWarshallComplet()
         {
-            var distances = new Dictionary<(Noeud<T>, Noeud<T>), int>();
-            var predecessors = new Dictionary<(Noeud<T>, Noeud<T>), Noeud<T>>();
+            Dictionary<(Noeud<T>, Noeud<T>), int> distances = new Dictionary<(Noeud<T>, Noeud<T>), int>();
+            Dictionary<(Noeud<T>, Noeud<T>), Noeud<T>> predecessors = new Dictionary<(Noeud<T>, Noeud<T>), Noeud<T>>();
 
             foreach (var u in noeuds)
             {
@@ -484,9 +484,9 @@ namespace ParisShell.Graph {
         }
         public Dictionary<Noeud<T>, int> FloydWarshallDistances(Noeud<T> depart)
         {
-            var (distances, predecessors) = FloydWarshallComplet();
+            (Dictionary<(Noeud<T>, Noeud<T>), int> distances, Dictionary <(Noeud<T>, Noeud<T>), Noeud <T>> predecessors) = FloydWarshallComplet();
 
-            var result = new Dictionary<Noeud<T>, int>();
+            Dictionary<Noeud<T>, int> result = new Dictionary<Noeud<T>, int>();
             foreach (var noeud in noeuds)
             {
                 result[noeud] = distances[(depart, noeud)];
@@ -496,7 +496,7 @@ namespace ParisShell.Graph {
 
         public List<Noeud<T>> FloydWarshallCheminPlusCourt(Noeud<T> depart, Noeud<T> arrivee)
         {
-            var (distances, predecessors) = FloydWarshallComplet();
+            (Dictionary<(Noeud<T>, Noeud<T>), int> distances, Dictionary<(Noeud<T>, Noeud<T>), Noeud<T>> predecessors) = FloydWarshallComplet();
 
             if (distances[(depart, arrivee)] == int.MaxValue)
             {
@@ -507,7 +507,7 @@ namespace ParisShell.Graph {
             Noeud<T> courant = arrivee;
 
             // Reconstruire le chemin à partir des prédécesseurs
-            while (courant != null && !courant.Equals(depart))
+            while (courant != null && courant != depart)
             {
                 chemin.Insert(0, courant);
                 courant = predecessors[(depart, courant)];
