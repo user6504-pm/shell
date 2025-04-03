@@ -156,7 +156,7 @@ namespace ParisShell.Commands {
                         ImportUser.ImportUtilisateursMySql("../../../../Infos_Excel/user.xlsx", MyConnection);
 
                         ctx.Status("Importing dishes...");
-                        ImportDishes.ImportDishesSQL("../../../../Infos_Excel/plats_simules_corrige.xlsx", MyConnection); 
+                        ImportDishes.ImportDishesSQL("../../../../Infos_Excel/plats_simules.xlsx", MyConnection); 
                     
 
                         Shell.PrintSucces("Excel data imported successfully.");
