@@ -37,13 +37,13 @@ namespace ParisShell.Commands
                     ShowClients();
                     break;
                 case "stats":
-                    ShowPlatsStats();
+                    ShowDishiesStats();
                     break;
                 case "dishoftheday":
-                    ShowPlatDuJour();
+                    ShowDishOfTheDay();
                     break;
                 case "sales":
-                    ShowTotalVentesParPlat();
+                    ShowSales();
                     break;
                 case "dishes":
                     ShowDishes();
@@ -96,7 +96,7 @@ namespace ParisShell.Commands
             _sqlService.ExecuteAndDisplay(query, parameters);
         }
 
-        private void ShowPlatsStats()
+        private void ShowDishiesStats()
         {
             string query = @"
                 SELECT type_plat AS 'Dish Type', COUNT(*) AS 'Count'
@@ -112,7 +112,7 @@ namespace ParisShell.Commands
             _sqlService.ExecuteAndDisplay(query, parameters);
         }
 
-        private void ShowPlatDuJour()
+        private void ShowDishOfTheDay()
         {
             string query = @"
                 SELECT plat_id AS 'ID', type_plat AS 'Type',
@@ -128,7 +128,7 @@ namespace ParisShell.Commands
             _sqlService.ExecuteAndDisplay(query, parameters);
         }
 
-        private void ShowTotalVentesParPlat()
+        private void ShowSales()
         {
             string query = @"
                 SELECT p.plat_id AS 'Dish ID',

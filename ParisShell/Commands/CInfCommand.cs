@@ -32,7 +32,7 @@ namespace ParisShell.Commands {
                 var connection = _sqlService.GetConnection();
                 string host = connection.DataSource;
                 string user = GetCurrentUser();
-                string port = ExtractPortFromConnectionString(connection.ConnectionString);
+                string port = ExtractPort(connection.ConnectionString);
                 string database = GetActiveDatabase();
                 string machine = Environment.MachineName;
                 string os = System.Runtime.InteropServices.RuntimeInformation.OSDescription;
@@ -108,7 +108,7 @@ namespace ParisShell.Commands {
             }
         }
 
-        private string ExtractPortFromConnectionString(string connectionString) {
+        private string ExtractPort(string connectionString) {
             var match = Regex.Match(connectionString, @"port=(\d+)", RegexOptions.IgnoreCase);
             return match.Success ? match.Groups[1].Value : "unknown";
         }

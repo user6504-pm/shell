@@ -39,27 +39,27 @@ internal class AnalyticsCommand : ICommand
         switch (args[0])
         {
             case "delivery":
-                ShowLivraisonsParCuisinier();
+                ShowDelivery();
                 break;
             case "orders":
-                ShowCommandesParPeriode();
+                ShowOrders();
                 break;
             case "avg-price":
-                ShowAveragePrixCommandes();
+                ShowAveragePrice();
                 break;
             case "avg-acc":
-                ShowAverageComptesClients();
+                ShowClientPercentage();
                 break;
             case "client-orders":
-                ShowCommandesClientParNationaliteEtPeriode();
+                ShowOrdersSorted();
                 break;
             default:
-                Shell.PrintError("Unknown subcommand.");
+                Shell.PrintError("Unknown subcommand, type analytics for usage.");
                 break;
         }
     }
 
-    private void ShowLivraisonsParCuisinier()
+    private void ShowDelivery()
     {
         string query = @"
             SELECT u.nom AS 'Last Name', u.prenom AS 'First Name', COUNT(*) AS 'Deliveries'
@@ -72,7 +72,7 @@ internal class AnalyticsCommand : ICommand
         _sqlService.ExecuteAndDisplay(query);
     }
 
-    private void ShowCommandesParPeriode()
+    private void ShowOrders()
     {
         var from = AnsiConsole.Ask<string>("Start date (YYYY-MM-DD):");
         var to = AnsiConsole.Ask<string>("End date (YYYY-MM-DD):");
@@ -93,7 +93,7 @@ internal class AnalyticsCommand : ICommand
         _sqlService.ExecuteAndDisplay(query, parameters);
     }
 
-    private void ShowAveragePrixCommandes()
+    private void ShowAveragePrice()
     {
         string query = @"
             SELECT AVG(p.prix_par_personne * c.quantite) AS moyenne
@@ -105,7 +105,7 @@ internal class AnalyticsCommand : ICommand
         AnsiConsole.MarkupLine($"[green]Average order price:[/] [bold]{result:0.00} €[/]");
     }
 
-    private void ShowAverageComptesClients() {
+    private void ShowClientPercentage() {
         string query = "SELECT COUNT(*) FROM clients";
         using var cmd = new MySqlCommand(query, _sqlService.GetConnection());
         var count = Convert.ToInt32(cmd.ExecuteScalar());
@@ -127,7 +127,7 @@ internal class AnalyticsCommand : ICommand
         AnsiConsole.Write(chart);
     }
 
-    private void ShowCommandesClientParNationaliteEtPeriode()
+    private void ShowOrdersSorted()
     {
         string email = AnsiConsole.Ask<string>("Client email:");
         string nat = AnsiConsole.Ask<string>("Dish nationality (leave empty for all):");
