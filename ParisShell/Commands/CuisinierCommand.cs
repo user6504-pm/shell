@@ -151,7 +151,7 @@ namespace ParisShell.Commands
         {
             AnsiConsole.Clear();
             AnsiConsole.MarkupLine("[green]Your dishes :[/]");
-            List<(int Id, string Name, string Type, string Nationalite, decimal Prix, int Quantite)> plats = new List<(int, string, string, string, decimal, int)>();
+            List<(int Id, string Name, string Type, string Nationality, decimal Price, int Quantity)> plats = new List<(int, string, string, string, decimal, int)>();
             MySqlCommand selectCmd = new MySqlCommand(@"
                 SELECT plat_id, plat_name, type_plat, nationalite, prix_par_personne, quantite
                 FROM plats
@@ -168,10 +168,10 @@ namespace ParisShell.Commands
                 string name = reader.GetString("plat_name");
                 string type = reader.GetString("type_plat");
                 string nat = reader.GetString("nationalite");
-                decimal prix = reader.GetDecimal("prix_par_personne");
-                int quantite = reader.GetInt32("quantite");
+                decimal price = reader.GetDecimal("prix_par_personne");
+                int quantity = reader.GetInt32("quantite");
 
-                plats.Add((id, name, type, nat, prix, quantite));
+                plats.Add((id, name, type, nat, price, quantity));
             }
 
             selectCmd.Dispose();
@@ -186,15 +186,15 @@ namespace ParisShell.Commands
             Table table = new Table().Border(TableBorder.Rounded);
             table.AddColumns("ID", "Name", "Type", "Nationality", "Price", "Quantity");
 
-            foreach ((int id, string name, string type, string nat, decimal prix, int quantite) plat in plats)
+            foreach ((int id, string name, string type, string nat, decimal price, int quantity) plat in plats)
             {
                 table.AddRow(
                     plat.id.ToString(),
                     plat.name,
                     plat.type,
                     plat.nat,
-                    plat.prix.ToString(),
-                    plat.quantite.ToString()
+                    plat.price.ToString(),
+                    plat.quantity.ToString()
                 );
             }
 
@@ -216,7 +216,7 @@ namespace ParisShell.Commands
                 return;
             }
 
-            List<(int Id, string Name, string Type, string Nationalite, decimal Prix, int Quantite)> plats = new List<(int, string, string, string, decimal, int)>();
+            List<(int Id, string Name, string Type, string Nationality, decimal Price, int Quantity)> plats = new List<(int, string, string, string, decimal, int)>();
 
             MySqlCommand selectCmd = new MySqlCommand(@"
                 SELECT plat_id, plat_name, type_plat, nationalite, prix_par_personne, quantite
@@ -234,10 +234,10 @@ namespace ParisShell.Commands
                 string name = reader.GetString("plat_name");
                 string type = reader.GetString("type_plat");
                 string nat = reader.GetString("nationalite");
-                decimal prix = reader.GetDecimal("prix_par_personne");
-                int quantite = reader.GetInt32("quantite");
+                decimal price = reader.GetDecimal("prix_par_personne");
+                int quantity = reader.GetInt32("quantite");
 
-                plats.Add((id, name, type, nat, prix, quantite));
+                plats.Add((id, name, type, nat, price, quantity));
             }
 
             selectCmd.Dispose();
@@ -252,21 +252,21 @@ namespace ParisShell.Commands
             Table table = new Table().Border(TableBorder.Rounded);
             table.AddColumns("ID", "Name", "Type", "Nationality", "Price", "Quantity");
 
-            foreach ((int id, string name, string type, string nat, decimal prix, int quantite) plat in plats)
+            foreach ((int id, string name, string type, string nat, decimal price, int quantity) plat in plats)
             {
                 table.AddRow(
                     plat.id.ToString(),
                     plat.name,
                     plat.type,
                     plat.nat,
-                    plat.prix.ToString(),
-                    plat.quantite.ToString()
+                    plat.price.ToString(),
+                    plat.quantity.ToString()
                 );
             }
 
             AnsiConsole.Write(table);
 
-            (int Id, string Name, string Type, string Nationalite, decimal Prix, int Quantite) platSelectionne = default;
+            (int Id, string Name, string Type, string Nationality, decimal Price, int Quantity) selectionnedDish = default;
             bool found = false;
 
             while (!found)
@@ -280,7 +280,7 @@ namespace ParisShell.Commands
 
                     if (plat.Id == platIdChoisi)
                     {
-                        platSelectionne = plat;
+                        selectionnedDish = plat;
                         found = true;
                     }
 
@@ -293,7 +293,7 @@ namespace ParisShell.Commands
                 }
             }
 
-            int ajout = AnsiConsole.Ask<int>("Enter [green]quantity to add[/]:");
+            int addition = AnsiConsole.Ask<int>("Enter [green]quantity to add[/]:");
 
             MySqlCommand updateCmd = new MySqlCommand(@"
                 UPDATE plats
@@ -301,8 +301,8 @@ namespace ParisShell.Commands
                 WHERE plat_id = @pid;",
                 _sqlService.GetConnection());
 
-            updateCmd.Parameters.AddWithValue("@ajout", ajout);
-            updateCmd.Parameters.AddWithValue("@pid", platSelectionne.Id);
+            updateCmd.Parameters.AddWithValue("@ajout", addition);
+            updateCmd.Parameters.AddWithValue("@pid", selectionnedDish.Id);
 
             updateCmd.ExecuteNonQuery();
             updateCmd.Dispose();
@@ -319,23 +319,23 @@ namespace ParisShell.Commands
                     .Title("Select the [green]dish type[/]:")
                     .AddChoices("ENTREE", "PLAT PRINCIPAL", "DESSERT"));
 
-            string nationalite = AnsiConsole.Prompt(
+            string nationality = AnsiConsole.Prompt(
                 new SelectionPrompt<string>()
                     .Title("Select the [green]dish type[/]:")
                     .AddChoices("Japonaise", "Française", "Indienne", "Chinoise", "Espagnole", "Italienne", "Mexicaine", "Thaïlandaise", "Coréenne", "Grecque", "Marocaine", "Vietnamienne", "Turque", "Libanaise"));
-            decimal prix = AnsiConsole.Ask<decimal>("Enter the [green]price per person[/] (e.g. 12.50):");
-            int quantite = AnsiConsole.Ask<int>("Enter the [green]initial quantity[/] of the dish:");
-            int nbPersonnes = AnsiConsole.Ask<int>("Enter the [green]number of people[/] the dish serves:");
+            decimal price = AnsiConsole.Ask<decimal>("Enter the [green]price per person[/] (e.g. 12.50):");
+            int quantity = AnsiConsole.Ask<int>("Enter the [green]initial quantity[/] of the dish:");
+            int numberPeople = AnsiConsole.Ask<int>("Enter the [green]number of people[/] the dish serves:");
 
-            DateTime dateFabrication = DateTime.Today;
-            DateTime datePeremption = AnsiConsole.Ask<DateTime>("Enter the [green]expiration date[/] (YYYY-MM-DD):");
+            DateTime FabricationDate = DateTime.Today;
+            DateTime ExpiryDate = AnsiConsole.Ask<DateTime>("Enter the [green]expiration date[/] (YYYY-MM-DD):");
 
-            string regime = AnsiConsole.Prompt(
+            string diet = AnsiConsole.Prompt(
                 new SelectionPrompt<string>()
                     .Title("Select the [green]dish type[/]:")
-                    .AddChoices("Aucun","Végan", "Végétarien", "Halal", "Kasher", "Sans gluten", "Sans lactose", "Faible en glucides", "Keto", "Paléo"));
+                    .AddChoices("Aucun", "Végan", "Végétarien", "Halal", "Kasher", "Sans gluten", "Sans lactose", "Faible en glucides", "Keto", "Paléo"));
             string ingredients = AnsiConsole.Ask<string>("Enter the [green]ingredients[/] (optional, press Enter to skip):");
-            string photo = AnsiConsole.Ask<string>("Enter the [green]photo URL[/] (optional, type Enter to skip):");
+            string picture = AnsiConsole.Ask<string>("Enter the [green]photo URL[/] (optional, type Enter to skip):");
 
             string query = @"
             INSERT INTO plats 
@@ -348,15 +348,15 @@ namespace ParisShell.Commands
             cmd.Parameters.AddWithValue("@uid", _session.CurrentUser.Id);
             cmd.Parameters.AddWithValue("@name", name);
             cmd.Parameters.AddWithValue("@type", type);
-            cmd.Parameters.AddWithValue("@nat", nationalite);
-            cmd.Parameters.AddWithValue("@prix", prix);
-            cmd.Parameters.AddWithValue("@quant", quantite);
-            cmd.Parameters.AddWithValue("@nbPers", nbPersonnes);
-            cmd.Parameters.AddWithValue("@fab", dateFabrication);
-            cmd.Parameters.AddWithValue("@peremp", datePeremption);
-            cmd.Parameters.AddWithValue("@regime", string.IsNullOrWhiteSpace(regime) ? DBNull.Value : regime);
+            cmd.Parameters.AddWithValue("@nat", nationality);
+            cmd.Parameters.AddWithValue("@prix", price);
+            cmd.Parameters.AddWithValue("@quant", quantity);
+            cmd.Parameters.AddWithValue("@nbPers", numberPeople);
+            cmd.Parameters.AddWithValue("@fab", FabricationDate);
+            cmd.Parameters.AddWithValue("@peremp", ExpiryDate);
+            cmd.Parameters.AddWithValue("@regime", string.IsNullOrWhiteSpace(diet) ? DBNull.Value : diet);
             cmd.Parameters.AddWithValue("@ingred", string.IsNullOrWhiteSpace(ingredients) ? DBNull.Value : ingredients);
-            cmd.Parameters.AddWithValue("@photo", string.IsNullOrWhiteSpace(photo) ? DBNull.Value : photo);
+            cmd.Parameters.AddWithValue("@photo", string.IsNullOrWhiteSpace(picture) ? DBNull.Value : picture);
 
             cmd.ExecuteNonQuery();
             cmd.Dispose();
@@ -367,13 +367,13 @@ namespace ParisShell.Commands
             AnsiConsole.Clear();
             ShowDishes();
 
-            int platId = -1;
-            string platName = "";
+            int IdDish = -1;
+            string DishName = "";
             bool found = false;
 
             while (!found)
             {
-                int idPlatSaisi = AnsiConsole.Ask<int>("Enter the [red]Dish ID[/] you want to delete:");
+                int ChosenIdDish = AnsiConsole.Ask<int>("Enter the [red]Dish ID[/] you want to delete:");
 
                 string checkQuery = @"
                  SELECT plat_id, plat_name 
@@ -381,14 +381,14 @@ namespace ParisShell.Commands
                  WHERE plat_id = @pid AND user_id = @uid";
 
                 MySqlCommand checkCmd = new MySqlCommand(checkQuery, _sqlService.GetConnection());
-                checkCmd.Parameters.AddWithValue("@pid", idPlatSaisi);
+                checkCmd.Parameters.AddWithValue("@pid", ChosenIdDish);
                 checkCmd.Parameters.AddWithValue("@uid", _session.CurrentUser.Id);
 
                 MySqlDataReader reader = checkCmd.ExecuteReader();
                 if (reader.Read())
                 {
-                    platId = reader.GetInt32("plat_id");
-                    platName = reader.GetString("plat_name");
+                    IdDish = reader.GetInt32("plat_id");
+                    DishName = reader.GetString("plat_name");
                     found = true;
                 }
                 else
@@ -402,30 +402,28 @@ namespace ParisShell.Commands
 
             string confirmation = AnsiConsole.Prompt(
                 new SelectionPrompt<string>()
-                    .Title($"Are you sure you want to delete dish [red]{platName}[/] (ID {platId}) ?")
+                    .Title($"Are you sure you want to delete dish [red]{DishName}[/] (ID {IdDish}) ?")
                     .AddChoices("Yes", "No")
             );
             bool confirm = true;
             if (confirmation == "No")
             {
                 AnsiConsole.MarkupLine("[yellow]Deletion aborted by the user.[/]");
-                confirm = false;
+                return;
             }
-            if (confirm)
-            {
-                string deleteQuery = @"
+
+            string deleteQuery = @"
                 DELETE FROM plats
                 WHERE plat_id = @pid AND user_id = @uid";
 
-                MySqlCommand deleteCmd = new MySqlCommand(deleteQuery, _sqlService.GetConnection());
-                deleteCmd.Parameters.AddWithValue("@pid", platId);
-                deleteCmd.Parameters.AddWithValue("@uid", _session.CurrentUser.Id);
+            MySqlCommand deleteCmd = new MySqlCommand(deleteQuery, _sqlService.GetConnection());
+            deleteCmd.Parameters.AddWithValue("@pid", IdDish);
+            deleteCmd.Parameters.AddWithValue("@uid", _session.CurrentUser.Id);
 
-                deleteCmd.ExecuteNonQuery();
-                deleteCmd.Dispose();
-                AnsiConsole.Clear();
-                AnsiConsole.MarkupLine("[yellow]Dish removed.[/]");
-            }
+            deleteCmd.ExecuteNonQuery();
+            deleteCmd.Dispose();
+            AnsiConsole.Clear();
+            AnsiConsole.MarkupLine("[yellow]Dish removed.[/]");
         }
     }
 }

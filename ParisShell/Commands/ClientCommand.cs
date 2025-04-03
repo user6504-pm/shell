@@ -38,26 +38,29 @@ namespace ParisShell.Commands {
             {
                 case "newc":
                     NewCommand();
-                break;
+                    break;
                 case "orders":
-                    ShowMyOrders(); 
-                break;
+                    ShowMyOrders();
+                    break;
                 case "cancel":
                     CancelMyOrder();
-                break;
+                    break;
                 case "order-travel":
                     OrderTravel(args);
-                break;
+                    break;
             }
         }
 
-        private void OrderTravel(string[] args) {
-            if (args.Length < 2 || !int.TryParse(args[1], out int commandeId)) {
+        private void OrderTravel(string[] args)
+        {
+            if (args.Length < 2 || !int.TryParse(args[1], out int commandeId))
+            {
                 Shell.PrintError("Usage: client order-travel {commande_id}");
                 return;
             }
 
-            if (!_sqlService.IsConnected || !_session.IsAuthenticated) {
+            if (!_sqlService.IsConnected || !_session.IsAuthenticated)
+            {
                 Shell.PrintError("You must be connected to view travel path.");
                 return;
             }
@@ -77,7 +80,8 @@ namespace ParisShell.Commands {
             cmd.Parameters.AddWithValue("@clientId", clientId);
 
             using var reader = cmd.ExecuteReader();
-            if (!reader.Read()) {
+            if (!reader.Read())
+            {
                 Shell.PrintError("Commande introuvable ou non liée à votre compte.");
                 return;
             }
@@ -91,33 +95,39 @@ namespace ParisShell.Commands {
             var noeudsDict = graphe.ObtenirNoeuds().ToDictionary(n => n.Id);
 
             if (!noeudsDict.TryGetValue(cookStationId, out var noeudDepart) ||
-                !noeudsDict.TryGetValue(clientStationId, out var noeudArrivee)) {
+                !noeudsDict.TryGetValue(clientStationId, out var noeudArrivee))
+            {
                 Shell.PrintError("Impossible de trouver les stations associées.");
                 return;
             }
 
             var chemin = graphe.BellmanFordCheminPlusCourt(noeudDepart, noeudArrivee);
 
-            if (chemin == null || chemin.Count == 0) {
+            if (chemin == null || chemin.Count == 0)
+            {
                 Shell.PrintError("Aucun chemin trouvé entre le cuisinier et le client.");
                 return;
             }
 
-            string nomFichier = $"commande_{commandeId}_trajet.svg";
-            graphe.ExporterSvg(nomFichier, chemin);
-            if (File.Exists(nomFichier)) {
-                Process.Start(new ProcessStartInfo {
-                    FileName = nomFichier,
+            string nameFile = $"commande_{commandeId}_trajet.svg";
+            graphe.ExporterSvg(nameFile, chemin);
+            if (File.Exists(nameFile))
+            {
+                Process.Start(new ProcessStartInfo
+                {
+                    FileName = nameFile,
                     UseShellExecute = true
                 });
             }
-            else {
+            else
+            {
                 Console.WriteLine("SVG file not found.");
             }
         }
 
 
-        private int GetStationIdFromUser(int userId) {
+        private int GetStationIdFromUser(int userId)
+        {
             const string query = @"
                 SELECT s.station_id
                 FROM users u
@@ -134,12 +144,14 @@ namespace ParisShell.Commands {
         {
             AnsiConsole.Clear();
 
-            if (!_sqlService.IsConnected) {
+            if (!_sqlService.IsConnected)
+            {
                 Shell.PrintError("You must be logged to order.");
                 return;
             }
 
-            if (!_session.IsAuthenticated || !_session.IsInRole("CLIENT")) {
+            if (!_session.IsAuthenticated || !_session.IsInRole("CLIENT"))
+            {
                 Shell.PrintError("Only clients can make an order.");
                 return;
             }
@@ -154,8 +166,10 @@ namespace ParisShell.Commands {
 
             _sqlService.GetConnection());
 
-            using (MySqlDataReader reader = selectCmd.ExecuteReader()) {
-                while (reader.Read()) {
+            using (MySqlDataReader reader = selectCmd.ExecuteReader())
+            {
+                while (reader.Read())
+                {
                     platsTemp.Add((
                         reader.GetInt32("plat_id"),
                         reader.GetString("plat_name"),
@@ -171,24 +185,26 @@ namespace ParisShell.Commands {
             selectCmd.Dispose();
 
             Graph<StationData> graph = GraphLoader.Construire(_sqlService.GetConnection());
-            var noeudsDict = graph.ObtenirNoeuds().ToDictionary(n => n.Id);
+            var nodesDict = graph.ObtenirNoeuds().ToDictionary(n => n.Id);
 
-            List<(int Id, string Name, string Type, string Nationalite, decimal Prix, int Quantite, decimal Temps)> platsDisponibles = new();
+            List<(int Id, string Name, string Type, string Nationalite, decimal Prix, int Quantite, decimal Temps)> DisponibleDishes = new();
 
-            foreach (var plat in platsTemp) {
+            foreach (var plat in platsTemp)
+            {
                 int user_station = GetStationIdFromUser(plat.UserId);
                 int session_station = GetStationIdFromUser(_session.CurrentUser.Id);
 
-                if (!noeudsDict.TryGetValue(user_station, out var noeudDepart)) continue;
-                if (!noeudsDict.TryGetValue(session_station, out var noeudArrivee)) continue;
+                if (!nodesDict.TryGetValue(user_station, out var noeudDepart)) continue;
+                if (!nodesDict.TryGetValue(session_station, out var noeudArrivee)) continue;
 
                 var chemin = graph.DijkstraCheminPlusCourt(noeudDepart, noeudArrivee);
                 decimal temps = graph.TempsCheminStations(chemin);
 
-                platsDisponibles.Add((plat.PlatId, plat.Name, plat.Type, plat.Nat, plat.Prix, plat.Quantite, temps));
+                DisponibleDishes.Add((plat.PlatId, plat.Name, plat.Type, plat.Nat, plat.Prix, plat.Quantite, temps));
             }
 
-            if (platsDisponibles.Count == 0) {
+            if (DisponibleDishes.Count == 0)
+            {
                 AnsiConsole.MarkupLine("[yellow]No available dishes for the moment.[/]");
                 return;
             }
@@ -196,7 +212,8 @@ namespace ParisShell.Commands {
             Table table = new Table().Border(TableBorder.Rounded);
             table.AddColumns("ID", "Name", "Type", "Nationality", "Price", "Quantity", "Time");
 
-            foreach ((int id, string name, string type, string nat, decimal prix, int quantite, decimal temps) in platsDisponibles) {
+            foreach ((int id, string name, string type, string nat, decimal prix, int quantite, decimal temps) in DisponibleDishes)
+            {
                 table.AddRow(
                     id.ToString(),
                     name,
@@ -210,9 +227,9 @@ namespace ParisShell.Commands {
 
             AnsiConsole.Write(table);
             bool confirm = true;
-            int platIdChoisi = AnsiConsole.Ask<int>("Enter the [green]ID[/] of the dish to order: (type 0 to cancel)");
+            int IdDishSelected = AnsiConsole.Ask<int>("Enter the [green]ID[/] of the dish to order: (type 0 to cancel)");
 
-            if (platIdChoisi == 0)
+            if (IdDishSelected == 0)
             {
                 confirm = false;
             }
@@ -222,11 +239,11 @@ namespace ParisShell.Commands {
                 bool found = false;
                 int i = 0;
 
-                while (i < platsDisponibles.Count && !found)
+                while (i < DisponibleDishes.Count && !found)
                 {
-                    (int Id, string Name, string Type, string Nationalite, decimal Prix, int Quantite, decimal Temps) plat = platsDisponibles[i];
+                    (int Id, string Name, string Type, string Nationalite, decimal Prix, int Quantite, decimal Temps) plat = DisponibleDishes[i];
 
-                    if (plat.Id == platIdChoisi)
+                    if (plat.Id == IdDishSelected)
                     {
                         platSelectionne = plat;
                         found = true;
@@ -241,24 +258,24 @@ namespace ParisShell.Commands {
                     return;
                 }
 
-                int quantiteCommandee = 0;
-                bool quantiteValide = false;
+                int quantityOrdered = 0;
+                bool quantityAccepted = false;
 
-                while (!quantiteValide)
+                while (!quantityAccepted)
                 {
-                    quantiteCommandee = AnsiConsole.Ask<int>("Enter the [green]quantity[/] to order:");
+                    quantityOrdered = AnsiConsole.Ask<int>("Enter the [green]quantity[/] to order:");
 
-                    if (quantiteCommandee <= 0)
+                    if (quantityOrdered <= 0)
                     {
                         Shell.PrintError("Quantity must be greater than 0.");
                     }
-                    else if (quantiteCommandee > platSelectionne.Quantite)
+                    else if (quantityOrdered > platSelectionne.Quantite)
                     {
                         Shell.PrintError("Not enough quantity available for this dish.");
                     }
                     else
                     {
-                        quantiteValide = true;
+                        quantityAccepted = true;
                     }
                 }
                 string confirmation = AnsiConsole.Prompt(
@@ -281,11 +298,11 @@ namespace ParisShell.Commands {
 
                     insertCmd.Parameters.AddWithValue("@cid", _session.CurrentUser.Id);
                     insertCmd.Parameters.AddWithValue("@pid", platSelectionne.Id);
-                    insertCmd.Parameters.AddWithValue("@qte", quantiteCommandee);
+                    insertCmd.Parameters.AddWithValue("@qte", quantityOrdered);
                     insertCmd.ExecuteNonQuery();
                     insertCmd.Dispose();
 
-                    int nouvelleQuantite = platSelectionne.Quantite - quantiteCommandee;
+                    int nouvelleQuantite = platSelectionne.Quantite - quantityOrdered;
 
                     MySqlCommand updateCmd = new MySqlCommand(@"
                     UPDATE plats
@@ -299,7 +316,7 @@ namespace ParisShell.Commands {
                     updateCmd.Dispose();
 
                     AnsiConsole.Clear();
-                    AnsiConsole.MarkupLine($"[green] Order recorded for dish '{platSelectionne.Name}' (ID {platSelectionne.Id}, {quantiteCommandee} unit(s)).[/]");
+                    AnsiConsole.MarkupLine($"[green] Order recorded for dish '{platSelectionne.Name}' (ID {platSelectionne.Id}, {quantityOrdered} unit(s)).[/]");
                 }
             }
         }
@@ -362,12 +379,12 @@ namespace ParisShell.Commands {
 
             int orderId = -1;
             string statut = null;
-            int platId = -1;
-            int quantite = 0;
+            int IdDish = -1;
+            int quantity = 0;
 
             while (statut == null)
             {
-                int saisie = AnsiConsole.Ask<int>("Enter the [green]Order ID[/] to cancel:");
+                int entry = AnsiConsole.Ask<int>("Enter the [green]Order ID[/] to cancel:");
 
                 string checkQuery = @"
                 SELECT statut, plat_id, quantite
@@ -375,16 +392,16 @@ namespace ParisShell.Commands {
                 WHERE commande_id = @oid AND client_id = @cid";
 
                 MySqlCommand checkCmd = new MySqlCommand(checkQuery, _sqlService.GetConnection());
-                checkCmd.Parameters.AddWithValue("@oid", saisie);
+                checkCmd.Parameters.AddWithValue("@oid", entry);
                 checkCmd.Parameters.AddWithValue("@cid", _session.CurrentUser.Id);
 
                 MySqlDataReader reader = checkCmd.ExecuteReader();
                 if (reader.Read())
                 {
                     statut = reader.GetString("statut");
-                    platId = reader.GetInt32("plat_id");
-                    quantite = reader.GetInt32("quantite");
-                    orderId = saisie;
+                    IdDish = reader.GetInt32("plat_id");
+                    quantity = reader.GetInt32("quantite");
+                    orderId = entry;
                 }
                 else
                 {
@@ -395,58 +412,49 @@ namespace ParisShell.Commands {
                 checkCmd.Dispose();
             }
 
-            bool confirm = true;
             if (statut != "EN_COURS")
             {
                 Shell.PrintWarning("Only orders with status EN_COURS can be canceled.");
-                confirm = false;
+                return;
             }
-            if (confirm)
-            {
-                string confirmation = AnsiConsole.Prompt(
-                    new SelectionPrompt<string>()
-                        .Title("Are you sure you want to cancel this order?")
-                        .AddChoices("Yes", "No")
-                );
 
-                if (confirmation == "No")
-                {
-                    AnsiConsole.MarkupLine("[yellow]Cancellation aborted by the user.[/]");
-                    confirm = false;
-                }
-                if (confirm)
-                {
-                    string updatePlatQuery = @"
+            string confirmation = AnsiConsole.Prompt(
+                new SelectionPrompt<string>()
+                    .Title("Are you sure you want to cancel this order?")
+                    .AddChoices("Yes", "No")
+            );
+
+            if (confirmation == "No")
+            {
+                AnsiConsole.MarkupLine("[yellow]Cancellation aborted by the user.[/]");
+                return;
+            }
+
+
+            string updatePlatQuery = @"
                     UPDATE plats 
                     SET quantite = quantite + @qte 
                     WHERE plat_id = @pid";
 
-                    MySqlCommand updatePlatCmd = new MySqlCommand(updatePlatQuery, _sqlService.GetConnection());
-                    updatePlatCmd.Parameters.AddWithValue("@qte", quantite);
-                    updatePlatCmd.Parameters.AddWithValue("@pid", platId);
-                    updatePlatCmd.ExecuteNonQuery();
-                    updatePlatCmd.Dispose();
+            MySqlCommand updatePlatCmd = new MySqlCommand(updatePlatQuery, _sqlService.GetConnection());
+            updatePlatCmd.Parameters.AddWithValue("@qte", quantity);
+            updatePlatCmd.Parameters.AddWithValue("@pid", IdDish);
+            updatePlatCmd.ExecuteNonQuery();
+            updatePlatCmd.Dispose();
 
-                    string cancelQuery = @"
+            string cancelQuery = @"
                     UPDATE commandes 
                     SET statut = 'ANNULEE' 
                     WHERE commande_id = @oid";
 
-                    MySqlCommand cancelCmd = new MySqlCommand(cancelQuery, _sqlService.GetConnection());
-                    cancelCmd.Parameters.AddWithValue("@oid", orderId);
-                    cancelCmd.ExecuteNonQuery();
-                    cancelCmd.Dispose();
+            MySqlCommand cancelCmd = new MySqlCommand(cancelQuery, _sqlService.GetConnection());
+            cancelCmd.Parameters.AddWithValue("@oid", orderId);
+            cancelCmd.ExecuteNonQuery();
+            cancelCmd.Dispose();
 
-                    AnsiConsole.Clear();
-                    AnsiConsole.MarkupLine("[yellow]Cancellation done.[/]");
-                }
-
-
-            }
-
-
+            AnsiConsole.Clear();
+            AnsiConsole.MarkupLine("[yellow]Cancellation done.[/]");
         }
-
     }
 }
     
