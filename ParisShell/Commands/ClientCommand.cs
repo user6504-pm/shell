@@ -77,7 +77,9 @@ namespace ParisShell.Commands {
             MySqlCommand selectCmd = new MySqlCommand(@"
                 SELECT p.plat_id, p.plat_name, p.type_plat, p.nationalite, p.prix_par_personne, p.quantite, p.user_id
                 FROM plats p
-                WHERE p.quantite > 0;", _sqlService.GetConnection());
+                WHERE p.quantite > 0 
+                ORDER BY p.prix_par_personne;",
+                _sqlService.GetConnection());
 
             using (MySqlDataReader reader = selectCmd.ExecuteReader()) {
                 while (reader.Read()) {
@@ -129,7 +131,7 @@ namespace ParisShell.Commands {
                     nat,
                     prix.ToString(),
                     quantite.ToString(),
-                    temps.ToString("0.00") + " min"
+                    temps.ToString("0") + " min"
                 );
             }
 
