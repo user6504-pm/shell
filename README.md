@@ -1,169 +1,213 @@
 
-# 📘 ParisShell Documentation
+# ParisShell Technical Documentation
 
-## ⚙️ Introduction
+## Overview
 
-**ParisShell** est un terminal C# interactif pour la gestion d’un système complet de livraison alimentaire entre clients et cuisiniers à Paris. Il intègre des fonctions de gestion utilisateur, de visualisation de données, d'importation depuis Excel, et de navigation dans une base de données MySQL, le tout dans un environnement stylisé avec `Spectre.Console`.
+**ParisShell** is a C# interactive command-line interface that manages a complete food delivery system between clients and cooks across Paris. The project integrates MySQL database interactions, Excel data imports, graph theory (for metro navigation), and user/role-based authentication. The interface is styled and enhanced using `Spectre.Console`.
 
----
+## Launching the Shell
 
-## 💻 Lancement du Shell
+To start the CLI interface:
 
 ```bash
 dotnet run
 ```
 
-Un écran d’accueil stylisé s'affiche avec un prompt type :
+Upon launch, a stylized banner is displayed, and the user is prompted with a shell-like interface:
+
 ```bash
 anon@paris:mysql:~$
 ```
 
----
+## Command Index
 
-## 📦 Commandes Disponibles
+| Command        | Description |
+|----------------|-------------|
+| `help`          | Lists all available commands |
+| `tuto`          | Interactive tutorial for using the shell |
+| `connect`       | Manual connection to MySQL |
+| `autoconnect`   | Auto-login with saved config |
+| `login`         | Authenticates a user session |
+| `logout`        | Terminates current session |
+| `register`      | Registers a new user |
+| `initdb`        | Initializes the DB schema and imports Excel data |
+| `graph`         | Displays the metro station graph |
+| `showtables`    | Lists accessible database tables |
+| `showtable`     | Displays data from a table |
+| `cinf`          | Displays connection info |
+| `clear`         | Clears the terminal screen |
+| `exit`          | Exits the shell |
 
-| Commande        | Description |
-|-----------------|-------------|
-| `help`          | Affiche toutes les commandes disponibles |
-| `tuto`          | Lancer le tutoriel d'utilisation |
-| `connect`       | Connexion manuelle à la base MySQL |
-| `autoconnect`   | Connexion automatique à la base |
-| `login`         | Connexion utilisateur |
-| `logout`        | Déconnexion |
-| `register`      | Création d'un nouveau compte |
-| `user`          | Gestion des utilisateurs (ADMIN/BOZO) |
-| `client`        | Commandes clients (`newc`, `orders`, `cancel`) |
-| `cook`          | Accès cuisinier aux plats et ventes |
-| `analytics`     | Données analytiques (admin) |
-| `initdb`        | Crée la BDD, les tables, et importe les données |
-| `graph`         | Affiche un graphe des stations de métro |
-| `showtables`    | Liste des tables accessibles |
-| `showtable`     | Affiche le contenu d’une table |
-| `cinf`          | Infos de connexion SQL |
-| `edit`          | Édition des infos utilisateurs |
-| `clear`         | Nettoie le terminal |
-| `exit`          | Quitte le shell |
-
----
-
-## 🧑‍💼 Commandes Utilisateurs
+## User Management Commands
 
 ```bash
-user add
-user update <userId>
-user list
-user getid
+user add                        # Adds a new user to the database
+user update <userId>            # Updates a user by ID
+user list                       # Lists all users with filters
+user getid                      # Retrieves user ID by name/surname
+user assign-role <userId>       # Assigns a role to a user
 ```
 
-La commande `user` permet aux admins ou bozos d'ajouter, modifier ou afficher les utilisateurs. Elle utilise des interactions visuelles (prompts Spectre) pour la saisie.
+These commands are available to users with role `ADMIN` or `BOZO` only.
 
----
-
-## 🍽️ Commandes Client
+## Client Commands
 
 ```bash
-client newc      # Passe une commande
-client orders    # Affiche les commandes passées
-client cancel    # Annule une commande (si EN_COURS)
+client newc         # Place a new order
+client orders       # View past orders
+client cancel       # Cancel a pending order
+order-travel <id>   # Displays the metro path between cook and client for a given order
 ```
 
-Le client peut voir les plats, comparer le temps de livraison estimé (basé sur le graphe métro), et commander.
+The `client newc` command uses metro distances to estimate delivery time before placing an order.
 
----
-
-## 👨‍🍳 Commandes Cuisinier
+## Cook Commands
 
 ```bash
-cook clients
-cook stats
-cook platdujour
-cook ventes
+cook clients            # Lists all clients who ordered the cook's dishes
+cook stats              # Shows statistics for dishes (sales, popularity)
+cook platdujour         # Sets or changes the daily special
+cook ventes             # Displays earnings per dish and total revenue
 ```
 
-Permet au cuisinier de voir les plats qu’il a préparés, les ventes par type de plat, les clients servis, etc.
+These commands provide visibility into the cook's performance, customer base, and inventory.
 
----
-
-## 📈 Commandes Analytics
+## Analytics Commands
 
 ```bash
-analytics delivery
-analytics orders
-analytics avg-price
-analytics avg-acc
-analytics client-orders
+analytics delivery        # Average delivery time per dish type and area
+analytics orders          # Orders per day/week/month
+analytics avg-price       # Average price per dish type
+analytics avg-acc         # Average accessibility score (client-cook metro distance)
+analytics client-orders   # Number of orders per client, sorted by frequency
 ```
 
-Ces commandes sont réservées à l’`ADMIN` ou au `BOZO`. Elles affichent sous forme de tableau des statistiques comme les livraisons, commandes, ou prix moyens.
+These commands are reserved for `ADMIN` or `BOZO` users only. They query large datasets and return structured tables.
 
 ---
 
-## 🗃️ Base de Données & Import
+## Database Initialization (`initdb`)
 
-La commande `initdb` :
+### Purpose
 
-```bash
-initdb
-```
+`initdb` is a critical command for setting up the entire schema and importing data from Excel files into MySQL.
 
-- Crée toutes les tables
-- Importe les données depuis :
-  - `MetroParis.xlsx` pour les stations et connexions
-  - `user.xlsx` pour les utilisateurs
-  - `plats_simules.xlsx` pour les plats
+### Steps Executed
 
-Le processus affiche des barres de progression Spectre.Console personnalisées.
+1. **Prompts for MySQL root password**
+2. **Drops and recreates the `Livininparis_219` database**
+3. **Creates all required tables**:
+   - `roles`, `users`, `user_roles`, `clients`
+   - `stations_metro`, `connexions_metro`
+   - `plats`, `commandes`, `evaluations`
+4. **Imports Excel files:**
+   - `MetroParis.xlsx` → stations and connections
+   - `user.xlsx` → predefined user dataset
+   - `plats_simules.xlsx` → mocked dish dataset
+5. **Displays Spectre.Console progress bars for feedback**
+6. **Closes the connection securely**
+
+Each table includes proper keys, constraints, and foreign key relationships. See `InitDbCommand.cs` for full SQL creation logic.
 
 ---
 
-## 🗺️ Graphe des stations de métro
+## Graph System
+
+### Overview
+
+The metro is represented using a generic graph structure (`Graph<T>`), where each node is a metro station (`StationData`). The edges are weighted by physical distance (in meters) between connected stations.
+
+### Components
+
+- `GraphLoader`  
+  Loads stations and connections from MySQL and builds the `Graph<StationData>` instance.
+
+- `Graph<T>`  
+  Core graph logic with:
+  - `DijkstraCheminPlusCourt`  
+  - `BellmanFordCheminPlusCourt`  
+  - `FloydWarshallDistance` (partial)
+  - BFS, DFS traversal
+  - Methods for checking connectivity, circuits
+  - Visualization methods (SVG via SkiaSharp)
+
+- `TempsCheminStations`  
+  Calculates the estimated travel time along a path, using metro average speed and transfer buffer.
+
+### Visualization
+
+The graph is visualized using SkiaSharp (SVG output):
+
+- Edges are directional (with arrows)
+- Node color and size depend on degree (number of connections)
+- Graph is exported to `graph_geo.svg`
+
+### Usage
 
 ```bash
 graph
 ```
 
-Génère un graphe orienté avec SkiaSharp, basé sur la longitude/latitude réelle des stations. Prend en compte les distances entre stations (stockées dans `connexions_metro`). 
+Also used implicitly in:
 
-Des flèches indiquent la direction (graph orienté), et les nœuds sont colorés dynamiquement selon leur degré.
-
----
-
-## 🔐 Sécurité & Sessions
-
-- Authentification requise pour accéder à certaines commandes
-- Rôles : `CLIENT`, `CUISINIER`, `ADMIN`, `BOZO`
-- Les rôles déterminent l'accès aux tables (`showtables`) et aux commandes
+- `order-travel`
+- `client newc` (to compute ETA before showing dishes)
 
 ---
 
-## 🧪 Tests et Débogage
+## Security & Sessions
 
-Utilise :
+ParisShell uses a session system:
 
-```bash
-showtables
-showtable <table>
-cinf
-```
-
-Pour visualiser les données SQL et l’état de la connexion.
+- Users login with email and password (`login`)
+- Session state includes role and user info
+- Commands check role-based authorization
+- Only admins can access analytics and DB admin tools
 
 ---
 
-## 🎨 Interface et Style
+## MySQL Integration
 
-ParisShell utilise `Spectre.Console` pour :
+The project interacts with a MySQL database using:
 
-- Des prompts colorés
-- Des barres de progression
-- Des tableaux stylisés
-- Des animations et spinners
+- `MySql.Data.MySqlClient`
+- Manual commands and prepared statements
+- A singleton `SqlService` to manage connection state
+- `Session` to persist current authenticated user
 
 ---
 
-## 📚 Astuces & Raccourcis
+## Excel Data Import
 
-- `clear` : vide le terminal
-- `edit` : modification ciblée des infos utilisateurs
-- `graph` : utile pour visualiser les trajets entre cuisinier et client
-- `getid` : récupère un ID utilisateur à partir de son nom/prénom
+Via `OfficeOpenXml`, the following files are parsed and inserted into the DB:
+
+| File                     | Table(s) Populated        |
+|--------------------------|---------------------------|
+| `MetroParis.xlsx`        | `stations_metro`, `connexions_metro` |
+| `user.xlsx`              | `users`, `clients`, `user_roles` |
+| `plats_simules.xlsx`     | `plats` |
+
+Custom import services include:
+
+- `ImportStations`
+- `Connexions`
+- `ImportUser`
+- `ImportDishes`
+
+---
+
+## Styling and CLI UX
+
+The project uses `Spectre.Console` to enhance terminal UX through:
+
+- Rich prompts with validation
+- Tables, progress bars, spinners
+- Colored headers and status indicators
+- Contextual success, error, and warning output
+
+---
+
+## Authors
+
+- Designed and developed for the ParisShell project.
+- Contributions from students and staff of the 2025 Computer Science curriculum.
