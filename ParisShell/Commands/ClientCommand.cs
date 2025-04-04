@@ -48,6 +48,9 @@ namespace ParisShell.Commands {
                 case "order-travel":
                     OrderTravel(args);
                     break;
+                default:
+                    Shell.PrintError("Unknown subcommand.");
+                    break;
             }
         }
 
@@ -349,7 +352,7 @@ namespace ParisShell.Commands {
             if (hasOrders)
             {
                 Table table = new Table().Border(TableBorder.Rounded);
-                table.AddColumns("ID Commande", "Nom du plat", "Type", "Nationalité", "Quantité", "Prix", "Date", "Statut");
+                table.AddColumns("ID Commande", "Nom du plat", "Type", "Nationalité", "Quantité", "Prix total", "Date", "Statut");
 
                 while (reader.Read())
                 {
@@ -359,11 +362,11 @@ namespace ParisShell.Commands {
                         reader["type_plat"].ToString(),
                         reader["nationalite"].ToString(),
                         reader["quantite"].ToString(),
-                        string.Format("{0:0.00}", Convert.ToDecimal(reader["prix_par_personne"])),
+                        string.Format("{0:0.00}", Convert.ToDecimal(reader["prix_par_personne"]) * Convert.ToDecimal(reader["quantite"])),
                         Convert.ToDateTime(reader["date_commande"]).ToString("yyyy-MM-dd HH:mm"),
                         reader["statut"].ToString()
                     );
-                }
+                }   
                 AnsiConsole.MarkupLine("[bold underline green]Vos commandes[/]");
                 AnsiConsole.Write(table);
             }
