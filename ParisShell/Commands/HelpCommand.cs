@@ -25,7 +25,7 @@ internal class HelpCommand : ICommand {
         var roles = _session.CurrentUser?.Roles?.Select(r => r.ToUpper()).ToList() ?? new List<string>();
         var allCommands = new Dictionary<string, List<string>> {
             ["ANON"] = new() { "clear", "disconnect", "login" },
-            ["ALL"] = new() { "clear", "disconnect", "showtables", "showtable", "logout" },
+            ["ALL"] = new() { "clear", "disconnect", "showtables", "showtable", "logout", "deleteacc" },
             ["ADMIN"] = new() { "user add", "user update", "user assign-role", "user list", "analytics" },
             ["BOZO"] = new() { "user add", "user update", "user assign-role", "user list", "analytics" },
             ["CUISINIER"] = new() { "cook clients", "cook stats", "cook dishoftheday", "cook sales","cook dishes","cook newdish" },
@@ -80,6 +80,7 @@ internal class HelpCommand : ICommand {
         "client cancel" => "Cancel an order.",
         "client orders" => "Show the client's orders.",
         "cook addquantity" => "Add quantity to a dish.",
+        "deleteacc" => "Delete the user account",
         _ => "No description available."
     };
 }
