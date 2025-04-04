@@ -38,6 +38,7 @@ anon@paris:mysql:~$
 | `clear`         | Clears the terminal screen |
 | `exit`          | Exits the shell |
 | `deleteacc`     | Delete user account |
+| `edit`          | Edit the user profile |
 
 ## User Management Commands
 
