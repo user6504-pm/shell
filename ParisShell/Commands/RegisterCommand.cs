@@ -28,13 +28,15 @@ internal class RegisterCommand : ICommand
                 .Title("Client type:")
                 .AddChoices("PARTICULIER", "ENTREPRISE"));
 
-        string role = AnsiConsole.Prompt(
-            new SelectionPrompt<string>()
-                .Title("Select your [red]role[/]:")
-                .AddChoices("CUISINIER", "CLIENT"));
 
         if (type != "ENTREPRISE")
         {
+
+            string role = AnsiConsole.Prompt(
+                new SelectionPrompt<string>()
+                    .Title("Select your [red]role[/]:")
+                    .AddChoices("CUISINIER", "CLIENT"));
+
             AnsiConsole.MarkupLine("[bold underline deeppink4_2]User Registration[/]");
 
             string firstname;
@@ -57,17 +59,18 @@ internal class RegisterCommand : ICommand
             do
             {
                 address = AnsiConsole.Ask<string>("Address:");
-                if (!address.Contains("@") || !address.Contains("."))
-                    Shell.PrintWarning("Address must contain both '@' and '.'");
-            } while (!address.Contains("@") || !address.Contains("."));
+                if (!address.Any(char.IsDigit) || address.Trim().Split(' ').Length < 2)
+                    Shell.PrintWarning("Address must contain a street number and a street name.");
+            } while (!address.Any(char.IsDigit) || address.Trim().Split(' ').Length < 2);
 
             string phone;
             do
             {
                 phone = AnsiConsole.Ask<string>("Phone:");
-                if (phone.Length != 10 || !phone.All(char.IsDigit))
-                    Shell.PrintWarning("Phone number must be exactly 10 digits.");
-            } while (phone.Length != 10 || !phone.All(char.IsDigit));
+                if (phone.Length != 10 || !phone.All(char.IsDigit) || !phone.StartsWith("0"))
+                    Shell.PrintWarning("Phone number must be exactly 10 digits and start with '0'.");
+            } while (phone.Length != 10 || !phone.All(char.IsDigit) || !phone.StartsWith("0"));
+
 
             string email;
             do
@@ -131,17 +134,18 @@ internal class RegisterCommand : ICommand
             do
             {
                 address = AnsiConsole.Ask<string>("Address:");
-                if (!address.Contains("@") || !address.Contains("."))
-                    Shell.PrintWarning("Address must contain both '@' and '.'");
-            } while (!address.Contains("@") || !address.Contains("."));
+                if (!address.Any(char.IsDigit) || address.Trim().Split(' ').Length < 2)
+                    Shell.PrintWarning("Address must contain a street number and a street name.");
+            } while (!address.Any(char.IsDigit) || address.Trim().Split(' ').Length < 2);
 
             string phone;
             do
             {
                 phone = AnsiConsole.Ask<string>("Phone:");
-                if (phone.Length != 10 || !phone.All(char.IsDigit))
-                    Shell.PrintWarning("Phone number must be exactly 10 digits.");
-            } while (phone.Length != 10 || !phone.All(char.IsDigit));
+                if (phone.Length != 10 || !phone.All(char.IsDigit) || !phone.StartsWith("0"))
+                    Shell.PrintWarning("Phone number must be exactly 10 digits and start with '0'.");
+            } while (phone.Length != 10 || !phone.All(char.IsDigit) || !phone.StartsWith("0"));
+
 
             string email;
             do
@@ -167,8 +171,8 @@ internal class RegisterCommand : ICommand
                 "INSERT INTO users (nom, prenom, adresse, telephone, email, mdp, metroproche) VALUES (@n, @p, @a, @t, @e, @m, @mp); SELECT LAST_INSERT_ID();",
                 _sqlService.GetConnection()))
             {
-                cmd.Parameters.AddWithValue("@n", companyname);
-                cmd.Parameters.AddWithValue("@p", codesiren);
+                cmd.Parameters.AddWithValue("@n", codesiren);
+                cmd.Parameters.AddWithValue("@p", companyname);
                 cmd.Parameters.AddWithValue("@a", address);
                 cmd.Parameters.AddWithValue("@t", phone);
                 cmd.Parameters.AddWithValue("@e", email);
@@ -178,7 +182,7 @@ internal class RegisterCommand : ICommand
             }
 
             Shell.PrintSucces("Registration successful! You can now use [green]login[/] to log in.");
-            AssignRole(userId, role);
+            AssignRole(userId, "CLIENT");
             AddClientDetails(userId, type);
         }
     }
