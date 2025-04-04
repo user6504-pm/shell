@@ -9,9 +9,9 @@ using ParisShell.Models;
 
 namespace ParisShell.Graph {
     internal class GraphLoader {
-        public static void ConstruireEtAfficherGraph(MySqlConnection connexion, int idDepart = 1, int idArrivee = 43, string nomFichier = "graphe_metro.svg") {
-            Graph<StationData> graphe = new Graph<StationData>();
-            Dictionary<int, Noeud<StationData>> noeudsDict = new Dictionary<int, Noeud<StationData>>();
+        public static void ConstruireEtAfficherGraph(MySqlConnection connexion, int startId = 1, int endId = 43, string fileName = "graphe_metro.svg") {
+            Graph<StationData> graph = new Graph<StationData>();
+            Dictionary<int, Noeud<StationData>> nodesDict = new Dictionary<int, Noeud<StationData>>();
 
 
             MySqlCommand cmdStations = new MySqlCommand("SELECT station_id, libelle_station, longitude, latitude FROM stations_metro", connexion);
@@ -19,19 +19,19 @@ namespace ParisShell.Graph {
 
             while (readerStations.Read()) {
                 int id = readerStations.GetInt32(0);
-                string nom = readerStations.GetString(1);
+                string name = readerStations.GetString(1);
                 double longitude = readerStations.GetDouble(2);
                 double latitude = readerStations.GetDouble(3);
 
                 StationData data = new StationData {
-                    Nom = nom,
+                    Name = name,
                     Longitude = longitude,
                     Latitude = latitude
                 };
 
                 var noeud = new Noeud<StationData>(id, data);
-                graphe.AjouterNoeud(noeud);
-                noeudsDict[id] = noeud;
+                graph.AjouterNoeud(noeud);
+                nodesDict[id] = noeud;
 
             }
 
@@ -44,10 +44,10 @@ namespace ParisShell.Graph {
             while (readerConnexions.Read()) {
                 int id1 = readerConnexions.GetInt32(0);
                 int id2 = readerConnexions.GetInt32(1);
-                int distance = Convert.ToInt32(readerConnexions.GetDouble(2));
+                int length = Convert.ToInt32(readerConnexions.GetDouble(2));
 
-                if (noeudsDict.TryGetValue(id1, out var noeud1) && noeudsDict.TryGetValue(id2, out var noeud2)) {
-                    graphe.AjouterLien(noeud1, noeud2, distance);
+                if (nodesDict.TryGetValue(id1, out var node1) && nodesDict.TryGetValue(id2, out var node2)) {
+                    graph.AjouterLien(node1, node2, length);
                 }
             }
 
@@ -60,18 +60,18 @@ namespace ParisShell.Graph {
                         ctx.Spinner(Spinner.Known.Flip);
                         ctx.SpinnerStyle(Style.Parse("green"));
 
-                        if (!noeudsDict.TryGetValue(idDepart, out var noeudDepart)) {
+                        if (!nodesDict.TryGetValue(startId, out var nodeStart)) {
                             Shell.PrintError("Station de départ introuvable.");
                             return;
                         }
 
-                        if (!noeudsDict.TryGetValue(idArrivee, out var noeudArrivee)) {
+                        if (!nodesDict.TryGetValue(endId, out var nodeEnd)) {
                             Shell.PrintError("Station d'arrivée introuvable.");
                             return;
                         }
 
-                        var chemin = graphe.BellmanFordCheminPlusCourt(noeudDepart, noeudArrivee);
-                        graphe.ExporterSvg(nomFichier, chemin);
+                        var chemin = graph.BellmanFordCheminPlusCourt(nodeStart, nodeEnd);
+                        graph.ExporterSvg(fileName, chemin);
                         Shell.PrintSucces("Graph created successfully.");
                     }
                     catch (Exception ex) {
@@ -80,8 +80,8 @@ namespace ParisShell.Graph {
                 });
         }
         public static Graph<StationData> Construire(MySqlConnection connexion) {
-            Graph<StationData> graphe = new Graph<StationData>();
-            Dictionary<int, Noeud<StationData>> noeudsDict = new Dictionary<int, Noeud<StationData>>();
+            Graph<StationData> graph = new Graph<StationData>();
+            Dictionary<int, Noeud<StationData>> nodesDict = new Dictionary<int, Noeud<StationData>>();
 
 
             MySqlCommand cmdStations = new MySqlCommand("SELECT station_id, libelle_station, longitude, latitude FROM stations_metro", connexion);
@@ -89,19 +89,19 @@ namespace ParisShell.Graph {
 
             while (readerStations.Read()) {
                 int id = readerStations.GetInt32(0);
-                string nom = readerStations.GetString(1);
+                string name = readerStations.GetString(1);
                 double longitude = readerStations.GetDouble(2);
                 double latitude = readerStations.GetDouble(3);
 
                 StationData data = new StationData {
-                    Nom = nom,
+                    Name = name,
                     Longitude = longitude,
                     Latitude = latitude
                 };
 
-                var noeud = new Noeud<StationData>(id, data);
-                graphe.AjouterNoeud(noeud);
-                noeudsDict[id] = noeud;
+                var node = new Noeud<StationData>(id, data);
+                graph.AjouterNoeud(node);
+                nodesDict[id] = node;
 
             }
 
@@ -114,10 +114,10 @@ namespace ParisShell.Graph {
             while (readerConnexions.Read()) {
                 int id1 = readerConnexions.GetInt32(0);
                 int id2 = readerConnexions.GetInt32(1);
-                int distance = Convert.ToInt32(readerConnexions.GetDouble(2));
+                int length = Convert.ToInt32(readerConnexions.GetDouble(2));
 
-                if (noeudsDict.TryGetValue(id1, out var noeud1) && noeudsDict.TryGetValue(id2, out var noeud2)) {
-                    graphe.AjouterLien(noeud1, noeud2, distance);
+                if (nodesDict.TryGetValue(id1, out var node1) && nodesDict.TryGetValue(id2, out var node2)) {
+                    graph.AjouterLien(node1, node2, length);
                 }
             }
 
@@ -135,7 +135,7 @@ namespace ParisShell.Graph {
                         Shell.PrintError($"Import error: {ex.Message}");
                     }
                 });
-            return graphe;
+            return graph;
 
         }
     }
