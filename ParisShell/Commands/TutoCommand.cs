@@ -1,17 +1,29 @@
 ﻿using Spectre.Console;
 using ParisShell.Services;
 
-namespace ParisShell.Commands {
-    internal class TutoCommand : ICommand {
+namespace ParisShell.Commands
+{
+    /// <summary>
+    /// Provides an interactive tutorial to guide new users through the basic steps of using ParisShell.
+    /// </summary>
+    internal class TutoCommand : ICommand
+    {
+        /// <summary>
+        /// The name of the command that triggers this tutorial.
+        /// </summary>
         public string Name => "tuto";
 
-
-        public void Execute(string[] args) {
+        /// <summary>
+        /// Executes the tutorial sequence interactively in the terminal.
+        /// Guides the user step by step through database initialization,
+        /// connection, login, table viewing, and help command usage.
+        /// </summary>
+        public void Execute(string[] args)
+        {
             AnsiConsole.Clear();
             AnsiConsole.MarkupLine("[bold underline deeppink4_2]ParisShell Interactive Tutorial[/]");
             AnsiConsole.MarkupLine("[dim]You'll be guided step-by-step. Type the command exactly as shown to move forward.[/]");
             AnsiConsole.MarkupLine("");
-
 
             WaitFor("Step 1 - To begin you need to initialize the MySQL database", "Type[green] {initdb}[/] and press[bold] Enter[/]", expected: "initdb");
             AnsiConsole.MarkupLine("The system will ask you for the MySQL password you use to establish a connection, this is the same password you use to connect to MySQL Workbench.");
@@ -28,12 +40,10 @@ namespace ParisShell.Commands {
             AnsiConsole.MarkupLine("If your credentials are valid, your user session will be active and you'll see your roles.");
             ConfirmStep("Logged in successfully!");
 
-
             WaitFor("Step 4 - Explore the tables you can access", "Type [green]showtables[/] and press [bold]Enter[/]", expected: "showtables");
             AnsiConsole.MarkupLine("This command shows all the tables you are allowed to see based on your role (e.g. [bold]client[/], [bold]cuisinier[/], [bold]admin[/]).");
             AnsiConsole.MarkupLine("If you're an admin or bozo, you’ll see the full database. Otherwise, you’ll only see a restricted view.");
             ConfirmStep("Visible tables displayed successfully!");
-
 
             WaitFor("Step 5 - Learn what you can do", "A command [green]help[/] can be done. It will list all commands available for your current role.", expected: "help");
             AnsiConsole.MarkupLine("For example, an [bold]admin[/] can manage users, roles, analytics, and database info.");
@@ -43,24 +53,37 @@ namespace ParisShell.Commands {
             AnsiConsole.MarkupLine("This [green]help[/] command only work [bold]after you're logged in[/] to determine your role.");
             ConfirmStep("You're ready to use [green]help[/] as soon as login in the real program.");
 
-
             ConfirmStep("\n[bold green]Thanks for following the tutorial![/] You can type [blue]help[/] anytime.");
             AnsiConsole.Clear();
         }
 
-        private void WaitFor(string stepTitle, string instruction, string expected) {
+        /// <summary>
+        /// Waits for a specific user input to validate a tutorial step.
+        /// Keeps prompting until the correct command is typed.
+        /// </summary>
+        /// <param name="stepTitle">The title of the tutorial step.</param>
+        /// <param name="instruction">Instruction displayed to the user.</param>
+        /// <param name="expected">Expected command input to proceed.</param>
+        private void WaitFor(string stepTitle, string instruction, string expected)
+        {
             if (!string.IsNullOrWhiteSpace(stepTitle))
                 AnsiConsole.MarkupLine($"\n[bold yellow]{stepTitle}[/]");
             if (!string.IsNullOrWhiteSpace(instruction))
                 AnsiConsole.MarkupLine(instruction);
 
             string input;
-            do {
+            do
+            {
                 input = AnsiConsole.Prompt(new TextPrompt<string>("[grey]>[/]").PromptStyle("white")).Trim().ToLower();
             } while (!input.StartsWith(expected));
         }
 
-        private void ConfirmStep(string message) {
+        /// <summary>
+        /// Displays a confirmation message for the current step and waits for a key press.
+        /// </summary>
+        /// <param name="message">The confirmation message to display.</param>
+        private void ConfirmStep(string message)
+        {
             AnsiConsole.MarkupLine($"\n[bold green]{message}[/]");
             AnsiConsole.MarkupLine("[dim]Press any key to continue...[/]");
             Console.ReadKey(true);

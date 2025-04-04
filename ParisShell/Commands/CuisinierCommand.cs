@@ -5,18 +5,34 @@ using MySqlX.XDevAPI.CRUD;
 
 namespace ParisShell.Commands
 {
+    /// <summary>
+    /// Handles all commands available to cooks, including managing dishes,
+    /// viewing client interactions, and generating sales statistics.
+    /// </summary>
     internal class CuisinierCommand : ICommand
     {
+        /// <summary>
+        /// The name used to invoke the cook command.
+        /// </summary>
         public string Name => "cook";
         private readonly SqlService _sqlService;
         private readonly Session _session;
 
+        /// <summary>
+        /// Initializes a new instance of the <see cref="CuisinierCommand"/> class.
+        /// </summary>
+        /// <param name="sqlService">The service used to interact with the database.</param>
+        /// <param name="session">The current user session.</param>
         public CuisinierCommand(SqlService sqlService, Session session)
         {
             _sqlService = sqlService;
             _session = session;
         }
 
+        /// <summary>
+        /// Executes a specific subcommand for a cook, such as viewing stats, clients,
+        /// managing dishes or checking today's dish.
+        /// </summary>
         public void Execute(string[] args)
         {
             if (!_session.IsAuthenticated || !_session.IsInRole("CUISINIER"))
@@ -63,6 +79,9 @@ namespace ParisShell.Commands
             }
         }
 
+        /// <summary>
+        /// Displays a list of clients served by the cook, either since the beginning or within a date range.
+        /// </summary>
         private void ShowClients()
         {
             var filter = AnsiConsole.Prompt(
@@ -96,6 +115,9 @@ namespace ParisShell.Commands
             _sqlService.ExecuteAndDisplay(query, parameters);
         }
 
+        /// <summary>
+        /// Displays a count of each dish type the cook has created.
+        /// </summary>
         private void ShowDishiesStats()
         {
             string query = @"
@@ -112,6 +134,9 @@ namespace ParisShell.Commands
             _sqlService.ExecuteAndDisplay(query, parameters);
         }
 
+        /// <summary>
+        /// Displays the dishes created today by the cook.
+        /// </summary>
         private void ShowDishOfTheDay()
         {
             string query = @"
@@ -128,6 +153,9 @@ namespace ParisShell.Commands
             _sqlService.ExecuteAndDisplay(query, parameters);
         }
 
+        /// <summary>
+        /// Displays total sales and quantity sold for each dish created by the cook.
+        /// </summary>
         private void ShowSales()
         {
             string query = @"
@@ -147,6 +175,11 @@ namespace ParisShell.Commands
 
             _sqlService.ExecuteAndDisplay(query, parameters);
         }
+
+        /// <summary>
+        /// Displays all the dishes created by the currently logged-in cook,
+        /// including name, type, nationality, price, and quantity.
+        /// </summary>
         private void ShowDishes()
         {
             AnsiConsole.Clear();
@@ -200,6 +233,11 @@ namespace ParisShell.Commands
 
             AnsiConsole.Write(table);
         }
+
+        /// <summary>
+        /// Allows the cook to add more quantity to an existing dish.
+        /// Displays all dishes and prompts the user to select one and input the additional quantity.
+        /// </summary>
         private void AddQ()
         {
             AnsiConsole.Clear();
@@ -307,6 +345,11 @@ namespace ParisShell.Commands
             updateCmd.ExecuteNonQuery();
             updateCmd.Dispose();
         }
+
+        /// <summary>
+        /// Adds a new dish to the system with details such as name, type, nationality,
+        /// price, quantity, expiration date, dietary info, and optional picture.
+        /// </summary>
         private void AddDish()
         {
             AnsiConsole.Clear();
@@ -362,6 +405,9 @@ namespace ParisShell.Commands
             cmd.Dispose();
         }
 
+        /// <summary>
+        /// Removes a dish created by the cook after confirming ownership and deletion.
+        /// </summary>
         private void Remove()
         {
             AnsiConsole.Clear();
