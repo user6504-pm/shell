@@ -5,15 +5,23 @@ using System.IO;
 using OfficeOpenXml;
 using MySql.Data.MySqlClient;
 
-public class ImportDishes
-{
-    public static void ImportDishesSQL(string excelPath, MySqlConnection connection)
-    {
+/// <summary>
+/// Handles the import of dish data from an Excel file into a MySQL database.
+/// </summary>
+public class ImportDishes {
+    /// <summary>
+    /// Imports dish records from an Excel file and inserts them into the "plats" table in the database.
+    /// Each cook (with the role "CUISINIER") is randomly assigned between 1 and 3 dishes.
+    /// </summary>
+    /// <param name="excelPath">Path to the Excel file containing dish data.</param>
+    /// <param name="connection">An open MySQL database connection.</param>
+    public static void ImportDishesSQL(string excelPath, MySqlConnection connection) {
         FileInfo file = new FileInfo(excelPath);
         ExcelPackage package = new ExcelPackage(file);
 
         ExcelWorksheet sheet = package.Workbook.Worksheets[0];
         int rowCount = sheet.Dimension.End.Row;
+
         List<int> cooks = new List<int>();
         MySqlCommand cmd = new MySqlCommand(@"
             SELECT ur.user_id FROM user_roles ur
@@ -21,8 +29,7 @@ public class ImportDishes
             WHERE r.role_name = 'CUISINIER';", connection);
 
         MySqlDataReader reader = cmd.ExecuteReader();
-        while (reader.Read())
-        {
+        while (reader.Read()) {
             cooks.Add(reader.GetInt32(0));
         }
         reader.Close();
@@ -31,16 +38,14 @@ public class ImportDishes
         Random rand = new Random();
         int row = 2;
         int cookIndex = 0;
-        while (row <= rowCount && cookIndex < cooks.Count)
-        {
+
+        while (row <= rowCount && cookIndex < cooks.Count) {
             int cookId = cooks[cookIndex];
             int dishCount = rand.Next(1, 4);
             cookIndex++;
 
-            for (int i = 0; i < dishCount && row <= rowCount; i++, row++)
-            {
-                try
-                {
+            for (int i = 0; i < dishCount && row <= rowCount; i++, row++) {
+                try {
                     string dishName = sheet.Cells[row, 11].Text;
                     string dishType = sheet.Cells[row, 2].Text;
                     int peopleCount = int.Parse(sheet.Cells[row, 3].Text);
@@ -54,9 +59,9 @@ public class ImportDishes
                     string photo = sheet.Cells[row, 10].Text;
 
                     string query = @"INSERT INTO plats 
-                (user_id, plat_name, type_plat, nb_personnes, quantite, date_fabrication, date_peremption, 
-                prix_par_personne, nationalite, regime_alimentaire, ingredients, photo)
-                VALUES (@uid, @dishName, @type, @people, @quantity, @prod, @exp, @price, @nation, @diet, @ingredients, @photo);";
+                        (user_id, plat_name, type_plat, nb_personnes, quantite, date_fabrication, date_peremption, 
+                        prix_par_personne, nationalite, regime_alimentaire, ingredients, photo)
+                        VALUES (@uid, @dishName, @type, @people, @quantity, @prod, @exp, @price, @nation, @diet, @ingredients, @photo);";
 
                     MySqlCommand insertCmd = new MySqlCommand(query, connection);
                     insertCmd.Parameters.AddWithValue("@uid", cookId);
@@ -74,8 +79,7 @@ public class ImportDishes
                     insertCmd.ExecuteNonQuery();
                     insertCmd.Dispose();
                 }
-                catch (Exception ex)
-                {
+                catch (Exception ex) {
                     Console.WriteLine($" ERROR line {row} : {ex.Message}");
                 }
             }

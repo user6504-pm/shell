@@ -7,22 +7,26 @@ using System.Text;
 using System.Threading.Tasks;
 using OfficeOpenXml;
 
-namespace ParisShell.Services
-{
-    internal class ImportStations
-    {
-        public static void ImportStationsMySql(string excelPath, MySqlConnection connection)
-        {
+namespace ParisShell.Services {
+    /// <summary>
+    /// Provides functionality to import metro station data from an Excel file into a MySQL database.
+    /// </summary>
+    internal class ImportStations {
+        /// <summary>
+        /// Imports station data from the first worksheet of the specified Excel file and inserts it into the 'stations_metro' table.
+        /// Skips duplicate station IDs and rows with invalid or missing required data.
+        /// </summary>
+        /// <param name="excelPath">Path to the Excel file containing station data.</param>
+        /// <param name="connection">An open MySQL connection to the target database.</param>
+        public static void ImportStationsMySql(string excelPath, MySqlConnection connection) {
             FileInfo file = new FileInfo(excelPath);
             HashSet<int> seenStationIds = new HashSet<int>();
 
-            using (ExcelPackage package = new ExcelPackage(file))
-            {
+            using (ExcelPackage package = new ExcelPackage(file)) {
                 ExcelWorksheet sheet = package.Workbook.Worksheets[0];
                 int rowCount = sheet.Dimension.Rows;
 
-                for (int row = 2; row <= rowCount; row++)
-                {
+                for (int row = 2; row <= rowCount; row++) {
                     string idText = sheet.Cells[row, 1].Text.Trim();
 
                     if (!int.TryParse(idText, out int stationId)) continue;
@@ -42,11 +46,10 @@ namespace ParisShell.Services
                         !int.TryParse(inseeText, out int insee)) continue;
 
                     string query = @"INSERT INTO stations_metro 
-                (libelle_ligne, libelle_station, longitude, latitude, commune, insee) 
-                VALUES (@line, @station, @long, @lat, @municipality, @insee);";
+                        (libelle_ligne, libelle_station, longitude, latitude, commune, insee) 
+                        VALUES (@line, @station, @long, @lat, @municipality, @insee);";
 
-                    using (MySqlCommand cmd = new MySqlCommand(query, connection))
-                    {
+                    using (MySqlCommand cmd = new MySqlCommand(query, connection)) {
                         cmd.Parameters.AddWithValue("@line", subwayLine);
                         cmd.Parameters.AddWithValue("@station", stationName);
                         cmd.Parameters.AddWithValue("@long", longitude);

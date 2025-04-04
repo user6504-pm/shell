@@ -3,12 +3,18 @@ using OfficeOpenXml;
 using System;
 using System.IO;
 
-namespace ParisShell.Services
-{
-    internal class ImportUser
-    {
-        public static void ImportUtilisateursMySql(string excelPath, MySqlConnection myConnection)
-        {
+namespace ParisShell.Services {
+    /// <summary>
+    /// Handles importing user, role, and client data from an Excel file into a MySQL database.
+    /// </summary>
+    internal class ImportUser {
+        /// <summary>
+        /// Imports users, their roles, and client information from Excel worksheets into corresponding MySQL tables.
+        /// Ensures default roles exist and inserts records from the "users", "user_roles", and "clients" sheets.
+        /// </summary>
+        /// <param name="excelPath">Path to the Excel file containing user data.</param>
+        /// <param name="myConnection">An open MySQL connection to the target database.</param>
+        public static void ImportUtilisateursMySql(string excelPath, MySqlConnection myConnection) {
             FileInfo file = new FileInfo(excelPath);
             using ExcelPackage package = new ExcelPackage(file);
 
@@ -18,8 +24,7 @@ namespace ParisShell.Services
 
             var baseRoles = new[] { "CLIENT", "CUISINIER", "ADMIN", "BOZO" };
 
-            foreach (var role in baseRoles)
-            {
+            foreach (var role in baseRoles) {
                 string insertRoleQuery = @"
         INSERT INTO roles (role_name)
         SELECT @name
@@ -32,8 +37,7 @@ namespace ParisShell.Services
             }
 
             int userRowCount = usersSheet.Dimension.Rows;
-            for (int row = 2; row <= userRowCount; row++)
-            {
+            for (int row = 2; row <= userRowCount; row++) {
                 string insertUserQuery = @"
                     INSERT INTO users (user_id, nom, prenom, adresse, telephone, email, mdp, metroproche)
                     VALUES (@id, @lastName, @firstName, @address, @phone, @email, @password, @nearestStation);";
@@ -51,8 +55,7 @@ namespace ParisShell.Services
             }
 
             int roleRowCount = rolesSheet.Dimension.Rows;
-            for (int row = 2; row <= roleRowCount; row++)
-            {
+            for (int row = 2; row <= roleRowCount; row++) {
                 string insertUserRoleQuery = @"
                     INSERT INTO user_roles (user_id, role_id)
                     VALUES (@userId, (SELECT role_id FROM roles WHERE role_name = @roleName));";
@@ -64,8 +67,7 @@ namespace ParisShell.Services
             }
 
             int clientRowCount = clientsSheet.Dimension.Rows;
-            for (int row = 2; row <= clientRowCount; row++)
-            {
+            for (int row = 2; row <= clientRowCount; row++) {
                 string insertClientQuery = @"
                     INSERT INTO clients (client_id, type_client)
                     VALUES (@id, @type);";
