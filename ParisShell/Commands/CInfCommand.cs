@@ -4,20 +4,39 @@ using MySql.Data.MySqlClient;
 using System;
 using System.Text.RegularExpressions;
 
-namespace ParisShell.Commands {
-    internal class CInfCommand : ICommand {
+namespace ParisShell.Commands
+{
+
+    /// <summary>
+    /// Command that displays information about the current SQL connection and session.
+    /// </summary>
+    internal class CInfCommand : ICommand
+    {
         private readonly SqlService _sqlService;
         private readonly Session _session;
 
+        /// <summary>
+        /// Command name used in the shell.
+        /// </summary>
         public string Name => "cinf";
 
-        public CInfCommand(SqlService sqlService, Session session) {
+        /// <summary>
+        /// Initializes the command with SQL service and session.
+        /// </summary>
+        public CInfCommand(SqlService sqlService, Session session)
+        {
             _sqlService = sqlService;
             _session = session;
         }
 
-        public void Execute(string[] args) {
-            if (!_sqlService.IsConnected) {
+        /// <summary>
+        /// Entry point to execute the command.
+        /// It ensures a database connection is active before displaying info.
+        /// </summary>
+        public void Execute(string[] args)
+        {
+            if (!_sqlService.IsConnected)
+            {
                 Shell.PrintError("Not connected to any database.");
                 return;
             }
@@ -25,6 +44,11 @@ namespace ParisShell.Commands {
             DisplayConnectionInfo();
         }
 
+        /// <summary>
+        /// Displays detailed connection and session information, including:
+        /// host, port, DB, user, roles, OS, machine, and .NET version.
+        /// Includes a rocket ASCII art with a styled info table.
+        /// </summary>
         private void DisplayConnectionInfo()
         {
             try
@@ -39,7 +63,7 @@ namespace ParisShell.Commands {
                 string dotnet = Environment.Version.ToString();
                 string userRole = string.Join(", ", _session.CurrentUser?.Roles ?? new List<string>());
 
-                // Your rocket ASCII Art
+                // Rocket ASCII Art
                 string asciiArt = """
 [bold red]         __
         / /\
@@ -61,7 +85,7 @@ namespace ParisShell.Commands {
                \_\/[/]
 """;
 
-                // Info Table
+                // Connection info table
                 var infoTable = new Table()
                     .Border(TableBorder.Rounded)
                     .AddColumn("[bold deeppink4_2]Information[/]")
@@ -93,34 +117,48 @@ namespace ParisShell.Commands {
             }
         }
 
-
-
-        private string GetCurrentUser() {
-            try {
+        /// <summary>
+        /// Gets the current SQL user by executing USER().
+        /// </summary>
+        private string GetCurrentUser()
+        {
+            try
+            {
                 string query = "SELECT USER()";
                 using var cmd = new MySqlCommand(query, _sqlService.GetConnection());
                 var result = cmd.ExecuteScalar();
                 return result?.ToString() ?? "unknown";
             }
-            catch (Exception ex) {
+            catch (Exception ex)
+            {
                 Shell.PrintError($"Failed to retrieve user: {ex.Message}");
                 return "error";
             }
         }
 
-        private string ExtractPort(string connectionString) {
+        /// <summary>
+        /// Extracts the port number from the connection string using regex.
+        /// </summary>
+        private string ExtractPort(string connectionString)
+        {
             var match = Regex.Match(connectionString, @"port=(\d+)", RegexOptions.IgnoreCase);
             return match.Success ? match.Groups[1].Value : "unknown";
         }
 
-        private string GetActiveDatabase() {
-            try {
+        /// <summary>
+        /// Gets the name of the currently selected database using DATABASE().
+        /// </summary>
+        private string GetActiveDatabase()
+        {
+            try
+            {
                 string query = "SELECT DATABASE()";
                 using var cmd = new MySqlCommand(query, _sqlService.GetConnection());
                 var result = cmd.ExecuteScalar();
                 return result?.ToString() ?? "unknown";
             }
-            catch (Exception ex) {
+            catch (Exception ex)
+            {
                 Shell.PrintError($"Failed to retrieve current database: {ex.Message}");
                 return "error";
             }
