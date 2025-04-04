@@ -1,21 +1,35 @@
-﻿using Spectre.Console;
-using MySql.Data.MySqlClient;
+﻿using MySql.Data.MySqlClient;
 using ParisShell.Services;
+using ParisShell;
 
-namespace ParisShell.Commands;
+using Spectre.Console;
 
+/// <summary>
+/// Command to execute various analytics-related queries and visualizations.
+/// Available to users with roles ADMIN or BOZO.
+/// </summary>
 internal class AnalyticsCommand : ICommand
 {
+    /// <summary>
+    /// Command name used to trigger it in the shell.
+    /// </summary>
     public string Name => "analytics";
+
     private readonly SqlService _sqlService;
     private readonly Session _session;
 
+    /// <summary>
+    /// Initializes the analytics command with SQL access and user session.
+    /// </summary>
     public AnalyticsCommand(SqlService sqlService, Session session)
     {
         _sqlService = sqlService;
         _session = session;
     }
 
+    /// <summary>
+    /// Main entry point for the command. Validates role and executes the selected subcommand.
+    /// </summary>
     public void Execute(string[] args)
     {
         if (!_session.IsAuthenticated)
@@ -32,7 +46,7 @@ internal class AnalyticsCommand : ICommand
 
         if (args.Length == 0)
         {
-            Shell.PrintWarning("Usage: analytics [delivery|orders|avg-price|avg-acc|client-orders]");
+            Shell.PrintWarning("Usage: analytics delivery | orders | avg-price | avg-acc | client-orders");
             return;
         }
 
@@ -59,6 +73,9 @@ internal class AnalyticsCommand : ICommand
         }
     }
 
+    /// <summary>
+    /// Shows the number of delivered orders grouped by cook (user who created the dish).
+    /// </summary>
     private void ShowDelivery()
     {
         string query = @"
@@ -72,6 +89,9 @@ internal class AnalyticsCommand : ICommand
         _sqlService.ExecuteAndDisplay(query);
     }
 
+    /// <summary>
+    /// Displays all orders placed between two specified dates.
+    /// </summary>
     private void ShowOrders()
     {
         var from = AnsiConsole.Ask<string>("Start date (YYYY-MM-DD):");
@@ -93,6 +113,9 @@ internal class AnalyticsCommand : ICommand
         _sqlService.ExecuteAndDisplay(query, parameters);
     }
 
+    /// <summary>
+    /// Calculates and displays the average price of all orders.
+    /// </summary>
     private void ShowAveragePrice()
     {
         string query = @"
@@ -102,19 +125,23 @@ internal class AnalyticsCommand : ICommand
 
         using var cmd = new MySqlCommand(query, _sqlService.GetConnection());
         var result = cmd.ExecuteScalar();
-        AnsiConsole.MarkupLine($"[green]Average order price:[/] [bold]{result:0.00} €[/]");
+        AnsiConsole.MarkupLine($"[green]Average order price:[/] [bold]{result:0.00} [/]");
     }
 
-    private void ShowClientPercentage() {
+    /// <summary>
+    /// Calculates and displays the percentage of users who are clients using a bar chart.
+    /// </summary>
+    private void ShowClientPercentage()
+    {
         string query = "SELECT COUNT(*) FROM clients";
         using var cmd = new MySqlCommand(query, _sqlService.GetConnection());
-        var count = Convert.ToInt32(cmd.ExecuteScalar());
+        var clientCount = Convert.ToInt32(cmd.ExecuteScalar());
 
         query = "SELECT COUNT(*) FROM users";
         using var cmd2 = new MySqlCommand(query, _sqlService.GetConnection());
         var totalUsers = Convert.ToInt32(cmd2.ExecuteScalar());
 
-        double ratio = (double)count / totalUsers * 100;
+        double ratio = (double)clientCount / totalUsers * 100;
 
         var chart = new BarChart()
             .Width(60)
@@ -123,10 +150,12 @@ internal class AnalyticsCommand : ICommand
             .AddItem("Clients", (float)ratio, new Color(0x8B, 0x0A, 0x50))
             .AddItem("Non-clients", 100f - (float)ratio, Color.White);
 
-
         AnsiConsole.Write(chart);
     }
 
+    /// <summary>
+    /// Displays a list of orders made by a client (by email), filtered optionally by nationality and date range.
+    /// </summary>
     private void ShowOrdersSorted()
     {
         string email = AnsiConsole.Ask<string>("Client email:");

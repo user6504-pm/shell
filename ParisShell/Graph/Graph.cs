@@ -536,13 +536,12 @@ namespace ParisShell.Graph {
            
             if (distances[(depart, arrivee)] == int.MaxValue)
             {
-                return new List<Noeud<T>>(); // Aucun chemin trouvé
+                return new List<Noeud<T>>(); 
             }
 
             List<Noeud<T>> chemin = new List<Noeud<T>>();
             Noeud<T> courant = arrivee;
 
-            // Reconstruire le chemin à partir des prédécesseurs
             while (courant != null && courant != depart)
             {
                 chemin.Insert(0, courant);
@@ -551,7 +550,7 @@ namespace ParisShell.Graph {
 
             if (courant == null)
             {
-                return new List<Noeud<T>>(); // Aucun chemin trouvé
+                return new List<Noeud<T>>(); 
             }
 
             chemin.Insert(0, depart);
