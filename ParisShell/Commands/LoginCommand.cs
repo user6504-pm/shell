@@ -5,29 +5,56 @@ using System;
 using System.Collections.Generic;
 using ParisShell.Models;
 
-namespace ParisShell.Commands {
-    internal class LoginCommand : ICommand {
+namespace ParisShell.Commands
+{
+
+    /// <summary>
+    /// Command that handles user login by verifying email and password.
+    /// On successful authentication, the session is populated with the user info and roles.
+    /// </summary>
+    internal class LoginCommand : ICommand
+    {
+
+        /// <summary>
+        /// The name used to invoke this command in the shell.
+        /// </summary>
+        public string Name => "login";
+
         private readonly SqlService _sqlService;
         private readonly Session _session;
 
-        public string Name => "login";
-
-        public LoginCommand(SqlService sqlService, Session session) {
+        /// <summary>
+        /// Initializes a new instance of the <see cref="LoginCommand"/> class.
+        /// </summary>
+        /// <param name="sqlService">Service for accessing the MySQL connection.</param>
+        /// <param name="session">Session that holds the current user context.</param>
+        public LoginCommand(SqlService sqlService, Session session)
+        {
             _sqlService = sqlService;
             _session = session;
         }
 
-        public void Execute(string[] args) {
+        /// <summary>
+        /// Executes the login logic.
+        /// Prompts the user for email and password, checks credentials against the database,
+        /// and loads the user's roles into the session if authenticated.
+        /// </summary>
+        /// <param name="args">Command-line arguments (not used).</param>
+        public void Execute(string[] args)
+        {
             string email = AnsiConsole.Prompt(
                 new TextPrompt<string>("Email:")
                     .PromptStyle("blue"));
+
             Console.CursorVisible = false;
             string password = AnsiConsole.Prompt(
                 new TextPrompt<string>("Password:")
                     .PromptStyle("red")
                     .Secret(' '));
             Console.CursorVisible = true;
-            try {
+
+            try
+            {
                 string userQuery = @"
                     SELECT user_id, nom, prenom
                     FROM users
@@ -38,12 +65,14 @@ namespace ParisShell.Commands {
                 cmd.Parameters.AddWithValue("@pwd", password);
 
                 using var reader = cmd.ExecuteReader();
-                if (!reader.Read()) {
+                if (!reader.Read())
+                {
                     Shell.PrintError("Invalid credentials.");
                     return;
                 }
 
-                var user = new User {
+                var user = new User
+                {
                     Id = reader.GetInt32("user_id"),
                     LastName = reader.GetString("nom"),
                     FirstName = reader.GetString("prenom"),
@@ -62,7 +91,8 @@ namespace ParisShell.Commands {
                 roleCmd.Parameters.AddWithValue("@userId", user.Id);
 
                 using var roleReader = roleCmd.ExecuteReader();
-                while (roleReader.Read()) {
+                while (roleReader.Read())
+                {
                     user.Roles.Add(roleReader.GetString("role_name"));
                 }
 
@@ -70,7 +100,8 @@ namespace ParisShell.Commands {
 
                 Shell.PrintSucces($"Logged in as [bold]{user.LastName} {user.FirstName}[/] ([blue]{string.Join(", ", user.Roles)}[/])");
             }
-            catch (Exception ex) {
+            catch (Exception ex)
+            {
                 Shell.PrintError($"Login error: {ex.Message}");
             }
         }

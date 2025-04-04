@@ -6,43 +6,69 @@ using System.Data;
 
 namespace ParisShell.Commands;
 
-internal class UserCommand : ICommand {
+/// <summary>
+/// Provides administrative operations for managing users,
+/// including creation, role assignment, updating, and listing.
+/// </summary>
+internal class UserCommand : ICommand
+{
+    /// <summary>
+    /// Command name to invoke this handler.
+    /// </summary>
     public string Name => "user";
 
     private readonly SqlService _sqlService;
     private readonly Session _session;
 
+    /// <summary>
+    /// Prompts a visible input.
+    /// </summary>
     private string Ask(string label) => AnsiConsole.Ask<string>($"[blue]{label} :[/]");
+
+    /// <summary>
+    /// Prompts a hidden input (e.g., for passwords).
+    /// </summary>
     private string AskSecret(string label) => AnsiConsole.Prompt(new TextPrompt<string>($"[red]{label} :[/]").Secret());
-    public UserCommand(SqlService sqlService, Session session) {
+    public UserCommand(SqlService sqlService, Session session)
+    {
         _sqlService = sqlService;
         _session = session;
     }
 
-    public void Execute(string[] args) {
-        if (!_session.IsInRole("ADMIN") && !_session.IsInRole("BOZO")) {
+    /// <summary>
+    /// Executes a subcommand such as add, update, assign-role, list, or getid.
+    /// Only available for admin or bozo roles.
+    /// </summary>
+    public void Execute(string[] args)
+    {
+        if (!_session.IsInRole("ADMIN") && !_session.IsInRole("BOZO"))
+        {
             Shell.PrintError("Access denied. Admin or bozo only.");
             return;
         }
 
-        if (args.Length == 0) {
+        if (args.Length == 0)
+        {
             Shell.PrintWarning("Usage: user [add|update|assign-role|list]");
             return;
         }
 
-        switch (args[0]) {
+        switch (args[0])
+        {
             case "add":
                 AddUser();
                 break;
             case "assign-role":
-                if (args.Length < 2 || !int.TryParse(args[1], out int assignId)) {
+                if (args.Length < 2 || !int.TryParse(args[1], out int assignId))
+                {
                     Shell.PrintError("Usage: user assign-role <userId>");
                     return;
                 }
                 AssignRole(assignId);
                 break;
             case "update":
-                if (args.Length < 2 || !int.TryParse(args[1], out int updateId)) {
+                if (args.Length < 2 || !int.TryParse(args[1], out int updateId))
+                {
                     Shell.PrintError("Usage: user update <userId>");
                     return;
                 }
@@ -60,6 +86,9 @@ internal class UserCommand : ICommand {
         }
     }
 
+    /// <summary>
+    /// Prompts and inserts a new user into the database.
+    /// </summary>
     private void AddUser() {
         var firstname = Ask("First name");
         var lastname = Ask("Last name");
@@ -88,7 +117,10 @@ internal class UserCommand : ICommand {
         if (role.ToLower() == "client")
             AddClient(userId);
     }
-
+    
+    /// <summary>
+    /// Updates an existing user's information based on user ID.
+    /// </summary>
     private void UpdateUser(int id)
     {
         if (!UserExists(id))
@@ -118,7 +150,10 @@ internal class UserCommand : ICommand {
         else
             Shell.PrintWarning("No update performed.");
     }
-
+    
+    /// <summary>
+    /// Assigns a role to an existing user by user ID.
+    /// </summary>
     private void AssignRole(int userId)
     {
         if (!UserExists(userId))
@@ -134,6 +169,9 @@ internal class UserCommand : ICommand {
             AddClient(userId);
     }
 
+    /// <summary>
+    /// Displays a list of users with different sorting options.
+    /// </summary>
     private void ListUsers()
     {
         string sort = AnsiConsole.Prompt(
@@ -180,6 +218,9 @@ internal class UserCommand : ICommand {
         _sqlService.ExecuteAndDisplay(query);
     }
 
+    /// <summary>
+    /// Allows selection of a role from the list of available roles.
+    /// </summary>
     private string SelectRole() {
         var roles = new List<string>();
         using var cmd = new MySqlCommand("SELECT role_name FROM roles", _sqlService.GetConnection());
@@ -193,6 +234,9 @@ internal class UserCommand : ICommand {
                 .AddChoices(roles));
     }
 
+    /// <summary>
+    /// Inserts a user-role association in the user_roles table.
+    /// </summary>
     private void InsertUserRole(int userId, string role) {
         using var getRole = new MySqlCommand("SELECT role_id FROM roles WHERE role_name = @r", _sqlService.GetConnection());
         getRole.Parameters.AddWithValue("@r", role);
@@ -204,6 +248,9 @@ internal class UserCommand : ICommand {
         insert.ExecuteNonQuery();
     }
 
+    /// <summary>
+    /// Adds client-specific details if the user is a client.
+    /// </summary>
     private void AddClient(int userId) {
         string type = AnsiConsole.Prompt(
             new SelectionPrompt<string>()
@@ -215,6 +262,10 @@ internal class UserCommand : ICommand {
         cmd.Parameters.AddWithValue("@type", type);
         cmd.ExecuteNonQuery();
     }
+
+    /// <summary>
+    /// Gets the user ID and email from their name.
+    /// </summary>
     private void GetUserId()
     {
         var lastname = Ask("Last name");
@@ -256,6 +307,10 @@ internal class UserCommand : ICommand {
         }
     }
 
+    /// <summary>
+    /// Checks if a user exists by ID.
+    /// </summary>
+    /// </summary>
     private bool UserExists(int userId)
     {
         using var cmd = new MySqlCommand("SELECT COUNT(*) FROM users WHERE user_id = @id", _sqlService.GetConnection());

@@ -1,35 +1,51 @@
-﻿using Spectre.Console;
-using ParisShell.Services;
+﻿using ParisShell.Services;
+using ParisShell;
 
-namespace ParisShell.Commands;
+using Spectre.Console;
 
-internal class HelpCommand : ICommand {
+/// <summary>
+/// Command that provides contextual help based on the current user's roles.
+/// Lists commands available to anonymous users, authenticated users, and role-specific commands.
+/// </summary>
+internal class HelpCommand : ICommand
+{
+    /// <summary>
+    /// The name used to invoke the help command.
+    /// </summary>
     public string Name => "help";
 
     private readonly SqlService _sqlService;
     private readonly Session _session;
 
-
-
-    public HelpCommand(SqlService sqlService, Session session) {
+    /// <summary>
+    /// Initializes a new instance of the <see cref="HelpCommand"/> class.
+    /// </summary>
+    public HelpCommand(SqlService sqlService, Session session)
+    {
         _sqlService = sqlService;
         _session = session;
     }
 
-    public void Execute(string[] args) {
-        if (!_sqlService.IsConnected) {
+    /// <summary>
+    /// Displays the appropriate commands based on the user's authentication and role.
+    /// </summary>
+    public void Execute(string[] args)
+    {
+        if (!_sqlService.IsConnected)
+        {
             Shell.PrintWarning("You must be connected to access contextual help.");
             return;
         }
 
         var roles = _session.CurrentUser?.Roles?.Select(r => r.ToUpper()).ToList() ?? new List<string>();
-        var allCommands = new Dictionary<string, List<string>> {
+        var allCommands = new Dictionary<string, List<string>>
+        {
             ["ANON"] = new() { "clear", "disconnect", "login", "register" },
-            ["ALL"] = new() { "clear", "disconnect", "showtables", "showtable", "logout", "deleteacc" },
+            ["ALL"] = new() { "clear", "disconnect", "showtables", "showtable", "logout", "deleteacc" ,"edit" },
             ["ADMIN"] = new() { "user add", "user update", "user assign-role", "user list", "analytics" },
             ["BOZO"] = new() { "user add", "user update", "user assign-role", "user list", "analytics" },
-            ["CUISINIER"] = new() { "cook clients", "cook stats", "cook dishoftheday", "cook sales","cook dishes","cook newdish" },
-            ["CLIENT"] = new() { "showtable", "showtables","client newc","client orders","client cancel","client order-travel"}
+            ["CUISINIER"] = new() { "cook clients", "cook stats", "cook dishoftheday", "cook sales", "cook dishes", "cook newdish" },
+            ["CLIENT"] = new() { "showtable", "showtables", "client newc", "client orders", "client cancel", "client order-travel" }
         };
 
         var table = new Table()
@@ -37,26 +53,34 @@ internal class HelpCommand : ICommand {
             .AddColumn("[deeppink4_2 bold]Available Commands[/]")
             .AddColumn("[white]Description[/]");
 
-        if (!_session.IsAuthenticated) {
+        if (!_session.IsAuthenticated)
+        {
             foreach (var cmd in allCommands["ANON"])
                 table.AddRow($"[white]{cmd}[/]", GetCommandDescription(cmd));
         }
-        else {
+        else
+        {
             foreach (var cmd in allCommands["ALL"])
                 table.AddRow($"[white]{cmd}[/]", GetCommandDescription(cmd));
 
-            // Role-specific
-            foreach (var role in roles) {
-                if (allCommands.ContainsKey(role)) {
+            foreach (var role in roles)
+            {
+                if (allCommands.ContainsKey(role))
+                {
                     foreach (var cmd in allCommands[role])
                         table.AddRow($"[green]{cmd}[/]", GetCommandDescription(cmd));
                 }
             }
         }
+
         AnsiConsole.Write(table);
     }
 
-    private string GetCommandDescription(string cmd) => cmd switch {
+    /// <summary>
+    /// Returns the description for a given command name.
+    /// </summary>
+    private string GetCommandDescription(string cmd) => cmd switch
+    {
         "login" => "Log in to a user account.",
         "clear" => "Clear the screen.",
         "disconnect" => "Disconnect from the MySQL server.",
@@ -81,6 +105,7 @@ internal class HelpCommand : ICommand {
         "cook addquantity" => "Add quantity to a dish.",
         "deleteacc" => "Delete the user account",
         "register" => "Register an account",
+        "edit" => "Edit user profile",
         _ => "No description available."
     };
 }
