@@ -37,6 +37,7 @@ anon@paris:mysql:~$
 | `cinf`          | Displays connection info |
 | `clear`         | Clears the terminal screen |
 | `exit`          | Exits the shell |
+| `deleteacc`     | Delete user account |
 
 ## User Management Commands
 

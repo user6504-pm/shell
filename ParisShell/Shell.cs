@@ -31,6 +31,7 @@ namespace ParisShell {
             commands["register"] = args => new RegisterCommand(_sqlService).Execute(args);
             commands["edit"] = args => new EditCommand(_sqlService, _session).Execute(args);
             commands["client"] = args => new ClientCommand(_sqlService, _session).Execute(args);
+            commands["deleteacc"] = args => new DeleteAccCommand(_sqlService, _session).Execute(args);
         }
 
         public void Run() {
@@ -92,7 +93,7 @@ namespace ParisShell {
 
         private string GetPromptUser() {
             return _session.IsAuthenticated
-                ? _session.CurrentUser.Nom
+                ? _session.CurrentUser.FirstName
                 : _sqlService.IsConnected ? "mysql" : "anon";
         }
 

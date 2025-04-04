@@ -80,7 +80,7 @@ namespace ParisShell.Graph {
                 Console.WriteLine("Le nœud de départ n'existe pas dans le graphe.");
                 return;
             }
-
+                
             HashSet<Noeud<T>> visite = new HashSet<Noeud<T>>();
             Stack<Noeud<T>> pile = new Stack<Noeud<T>>();
 
@@ -605,7 +605,7 @@ namespace ParisShell.Graph {
                     distanceTotaleKm += lien.Poids / 1000.0;
                 }
                 else {
-                    Shell.PrintWarning($"Missing link between {from.Donnees.Nom} and {to.Donnees.Nom}");
+                    Shell.PrintWarning($"Missing link between {from.Donnees.Name} and {to.Donnees.Name}");
                 }
             }
 
@@ -807,7 +807,7 @@ namespace ParisShell.Graph {
                 bool estExtremite = chemin != null && (noeud.Equals(chemin.First()) || noeud.Equals(chemin.Last()));
 
                 if (degre >= 10 || estExtremite) {
-                    canvas.DrawText(station.Nom, point.X + radius + 2, point.Y - 2, textPaint);
+                    canvas.DrawText(station.Name, point.X + radius + 2, point.Y - 2, textPaint);
                 }
 
             }

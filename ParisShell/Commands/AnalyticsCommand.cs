@@ -54,7 +54,7 @@ internal class AnalyticsCommand : ICommand
                 ShowOrdersSorted();
                 break;
             default:
-                Shell.PrintError("Unknown subcommand, type analytics for usage.");
+                Shell.PrintError("Unknown subcommand");
                 break;
         }
     }
