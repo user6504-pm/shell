@@ -45,8 +45,8 @@ namespace ParisShell.Commands {
 
                 var user = new User {
                     Id = reader.GetInt32("user_id"),
-                    Nom = reader.GetString("nom"),
-                    Prenom = reader.GetString("prenom"),
+                    LastName = reader.GetString("nom"),
+                    FirstName = reader.GetString("prenom"),
                     Email = email
                 };
 
@@ -68,7 +68,7 @@ namespace ParisShell.Commands {
 
                 _session.CurrentUser = user;
 
-                Shell.PrintSucces($"Logged in as [bold]{user.Prenom} {user.Nom}[/] ([blue]{string.Join(", ", user.Roles)}[/])");
+                Shell.PrintSucces($"Logged in as [bold]{user.LastName} {user.Prenom}[/] ([blue]{string.Join(", ", user.Roles)}[/])");
             }
             catch (Exception ex) {
                 Shell.PrintError($"Login error: {ex.Message}");

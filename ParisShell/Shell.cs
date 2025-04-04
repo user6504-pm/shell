@@ -92,7 +92,7 @@ namespace ParisShell {
 
         private string GetPromptUser() {
             return _session.IsAuthenticated
-                ? _session.CurrentUser.Nom
+                ? _session.CurrentUser.FirstName
                 : _sqlService.IsConnected ? "mysql" : "anon";
         }
 
