@@ -21,12 +21,12 @@ namespace ParisShell.Commands {
             string email = AnsiConsole.Prompt(
                 new TextPrompt<string>("Email:")
                     .PromptStyle("blue"));
-
+            Console.CursorVisible = false;
             string password = AnsiConsole.Prompt(
                 new TextPrompt<string>("Password:")
                     .PromptStyle("red")
                     .Secret(' '));
-
+            Console.CursorVisible = true;
             try {
                 string userQuery = @"
                     SELECT user_id, nom, prenom
