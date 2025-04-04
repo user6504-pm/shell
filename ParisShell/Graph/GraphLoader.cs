@@ -123,18 +123,6 @@ namespace ParisShell.Graph {
 
             readerConnexions.Close();
             cmdConnexions.Dispose();
-
-            AnsiConsole.Status()
-                .Start("Creating graph...", ctx => {
-                    try {
-                        ctx.Spinner(Spinner.Known.Flip);
-                        ctx.SpinnerStyle(Style.Parse("green"));
-                        Shell.PrintSucces("Graph created successfully.");
-                    }
-                    catch (Exception ex) {
-                        Shell.PrintError($"Import error: {ex.Message}");
-                    }
-                });
             return graph;
 
         }

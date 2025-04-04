@@ -2,17 +2,40 @@
 using ParisShell.Services;
 using ParisShell.Models;
 
-namespace ParisShell.Commands {
-    internal class ConnectCommand : ICommand {
-        private readonly SqlService _sqlService;
+namespace ParisShell.Commands
+{
+
+    /// <summary>
+    /// Command to establish a connection to the MySQL database using user-provided password.
+    /// </summary>
+    internal class ConnectCommand : ICommand
+    {
+
+        /// <summary>
+        /// Command name used in the shell interface.
+        /// </summary>
         public string Name => "connect";
 
-        public ConnectCommand(SqlService sqlService) {
+        private readonly SqlService _sqlService;
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="ConnectCommand"/> class with the SQL service dependency.
+        /// </summary>
+        /// <param name="sqlService">The service used to manage MySQL connections.</param>
+        public ConnectCommand(SqlService sqlService)
+        {
             _sqlService = sqlService;
         }
 
-        public void Execute(string[] args) {
-            if (_sqlService.IsConnected) {
+        /// <summary>
+        /// Executes the connection command.
+        /// Prompts the user for the root MySQL password and attempts to connect to the configured database.
+        /// </summary>
+        /// <param name="args">Unused. Connection is handled via interactive prompt.</param>
+        public void Execute(string[] args)
+        {
+            if (_sqlService.IsConnected)
+            {
                 Shell.PrintWarning("Already connected.");
                 return;
             }
