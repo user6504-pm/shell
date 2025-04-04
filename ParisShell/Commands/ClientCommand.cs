@@ -48,14 +48,12 @@ namespace ParisShell.Commands
                 return;
             }
 
-            // No argument provided → show usage hint
             if (args.Length == 0)
             {
                 Shell.PrintWarning("Usage: client newc | orders | cancel | order-travel (id)");
                 return;
             }
 
-            // Determine which subcommand to run
             switch (args[0])
             {
                 case "newc":
