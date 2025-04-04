@@ -1,30 +1,37 @@
-﻿using MySqlX.XDevAPI;
-using ParisShell.Graph;
+﻿using ParisShell.Graph;
 using ParisShell.Services;
-using Spectre.Console;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
-namespace ParisShell.Commands
+using ParisShell;
+
+/// <summary>
+/// Command to build and display the current graph using station data.
+/// </summary>
+internal class GraphCommand : ICommand
 {
-    internal class GraphCommand : ICommand
-    {
-        public string Name => "graph";
-        private readonly SqlService _sqlService;
+    /// <summary>
+    /// The name used to invoke the graph command.
+    /// </summary>
+    public string Name => "graph";
 
-        public GraphCommand(SqlService sqlService)
+    private readonly SqlService _sqlService;
+
+    /// <summary>
+    /// Initializes the GraphCommand with the SQL service.
+    /// </summary>
+    public GraphCommand(SqlService sqlService)
+    {
+        _sqlService = sqlService;
+    }
+
+    /// <summary>
+    /// Executes the graph display logic. Requires a valid database connection.
+    /// </summary>
+    public void Execute(string[] args)
+    {
+        if (!_sqlService.IsConnected)
         {
-            _sqlService = sqlService;
+            Shell.PrintError("Must be connected to a database.");
         }
-        public void Execute(string[] args)
-        {
-            if (!_sqlService.IsConnected) {
-                Shell.PrintError("Must be connected to a database.");
-            }
-            GraphLoader.ConstruireEtAfficherGraph(_sqlService.GetConnection());
-        }
+        GraphLoader.ConstruireEtAfficherGraph(_sqlService.GetConnection());
     }
 }

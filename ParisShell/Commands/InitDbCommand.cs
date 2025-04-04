@@ -4,11 +4,30 @@ using MySql.Data.MySqlClient;
 using System.Data;
 using OfficeOpenXml;
 
-namespace ParisShell.Commands {
-    internal class InitDbCommand : ICommand {
+namespace ParisShell.Commands
+{
+
+    /// <summary>
+    /// Command to initialize the MySQL database for the application.
+    /// It drops the old database, recreates all necessary tables, and imports data from Excel files.
+    /// </summary>
+    internal class InitDbCommand : ICommand
+    {
+
+        /// <summary>
+        /// Name of the command as used in the CLI.
+        /// </summary>
         public string Name => "initdb";
 
-        public void Execute(string[] args) {
+        /// <summary>
+        /// Executes the database initialization process:
+        /// 1. Connects to MySQL using a password prompt.
+        /// 2. Drops and recreates the database and tables.
+        /// 3. Imports station, user, connection, and dish data from Excel.
+        /// </summary>
+        /// <param name="args">Optional command-line arguments (not used here).</param>
+        public void Execute(string[] args)
+        {
             ExcelPackage.LicenseContext = LicenseContext.NonCommercial;
             Shell.PrintWarning("Initializing database [bold]Livininparis_219[/]...");
 
@@ -22,21 +41,25 @@ namespace ParisShell.Commands {
             string ExcelPath = "../../../../Infos_Excel/MetroParis.xlsx";
             FileInfo ExcelFile = new FileInfo(ExcelPath);
 
-            MySqlConnection MyConnection  = null;
-            try {
+            MySqlConnection MyConnection = null;
+
+            try
+            {
                 string ConnectionString = "SERVER=localhost;PORT=3306;" +
-                                         "DATABASE=sys;" +
-                                         "UID=root;PASSWORD=" + pwd;
+                                          "DATABASE=sys;" +
+                                          "UID=root;PASSWORD=" + pwd;
 
                 MyConnection = new MySqlConnection(ConnectionString);
                 MyConnection.Open();
                 Shell.PrintSucces("Connected to MySQL.");
             }
-            catch (MySqlException e) {
+            catch (MySqlException e)
+            {
                 Shell.PrintError($"Connection error: {e.Message}");
                 return;
             }
-            finally {
+            finally
+            {
                 Console.CursorVisible = true;
             }
 
@@ -127,13 +150,16 @@ namespace ParisShell.Commands {
                 );"
             };
 
-            foreach (var query in tableQueries) {
-                try {
+            foreach (var query in tableQueries)
+            {
+                try
+                {
                     using var command = MyConnection.CreateCommand();
                     command.CommandText = query;
                     command.ExecuteNonQuery();
                 }
-                catch (MySqlException e) {
+                catch (MySqlException e)
+                {
                     Shell.PrintError($"SQL Error: {e.Message}");
                     return;
                 }
@@ -143,7 +169,8 @@ namespace ParisShell.Commands {
 
             AnsiConsole.Status()
                 .Start("Importing data...", ctx => {
-                    try {
+                    try
+                    {
                         ctx.Spinner(Spinner.Known.Dots2);
                         ctx.SpinnerStyle(Style.Parse("green"));
                         ctx.Status("Importing metro stations...");
@@ -156,12 +183,12 @@ namespace ParisShell.Commands {
                         ImportUser.ImportUtilisateursMySql("../../../../Infos_Excel/user.xlsx", MyConnection);
 
                         ctx.Status("Importing dishes...");
-                        ImportDishes.ImportDishesSQL("../../../../Infos_Excel/plats_simules.xlsx", MyConnection); 
-                    
+                        ImportDishes.ImportDishesSQL("../../../../Infos_Excel/plats_simules.xlsx", MyConnection);
 
                         Shell.PrintSucces("Excel data imported successfully.");
                     }
-                    catch (Exception ex) {
+                    catch (Exception ex)
+                    {
                         Shell.PrintError($"Import error: {ex.Message}");
                     }
                 });
