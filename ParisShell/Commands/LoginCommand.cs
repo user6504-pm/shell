@@ -68,7 +68,7 @@ namespace ParisShell.Commands {
 
                 _session.CurrentUser = user;
 
-                Shell.PrintSucces($"Logged in as [bold]{user.LastName} {user.Prenom}[/] ([blue]{string.Join(", ", user.Roles)}[/])");
+                Shell.PrintSucces($"Logged in as [bold]{user.LastName} {user.FirstName}[/] ([blue]{string.Join(", ", user.Roles)}[/])");
             }
             catch (Exception ex) {
                 Shell.PrintError($"Login error: {ex.Message}");
