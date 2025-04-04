@@ -366,7 +366,7 @@ namespace ParisShell.Commands {
                         Convert.ToDateTime(reader["date_commande"]).ToString("yyyy-MM-dd HH:mm"),
                         reader["statut"].ToString()
                     );
-                }
+                }   
                 AnsiConsole.MarkupLine("[bold underline green]Vos commandes[/]");
                 AnsiConsole.Write(table);
             }
