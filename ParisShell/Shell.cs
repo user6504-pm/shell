@@ -15,6 +15,7 @@ namespace ParisShell {
         private readonly SqlService _sqlService = new SqlService();
         private readonly Session _session = new();
 
+
         /// <summary>
         /// Initializes the shell and registers all available commands.
         /// </summary>
