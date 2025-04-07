@@ -331,7 +331,13 @@ namespace ParisShell.Commands
                 }
             }
 
-            int addition = AnsiConsole.Ask<int>("Enter [green]quantity to add[/]:");
+
+            int addition = -1;
+            
+            while(addition < 0)
+            {
+                addition = AnsiConsole.Ask<int>("Enter [green]quantity[/] to add (must be positive):");
+            }
 
             MySqlCommand updateCmd = new MySqlCommand(@"
                 UPDATE plats
@@ -344,6 +350,7 @@ namespace ParisShell.Commands
 
             updateCmd.ExecuteNonQuery();
             updateCmd.Dispose();
+            AnsiConsole.MarkupLine("[green]Quantity added successfully[/]");
         }
 
         /// <summary>
