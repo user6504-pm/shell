@@ -410,6 +410,7 @@ namespace ParisShell.Commands
 
             cmd.ExecuteNonQuery();
             cmd.Dispose();
+            AnsiConsole.WriteLine("Dish [green]successfully[/] added");
         }
 
         /// <summary>

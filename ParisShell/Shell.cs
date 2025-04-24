@@ -40,6 +40,7 @@ namespace ParisShell {
             commands["edit"] = args => new EditCommand(_sqlService, _session).Execute(args);
             commands["client"] = args => new ClientCommand(_sqlService, _session).Execute(args);
             commands["deleteacc"] = args => new DeleteAccCommand(_sqlService, _session).Execute(args);
+            commands["changerole"] = args => new ChangeRoleCommand(_sqlService, _session).Execute(args);
         }
 
         /// <summary>

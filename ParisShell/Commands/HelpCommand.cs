@@ -41,11 +41,11 @@ internal class HelpCommand : ICommand
         var allCommands = new Dictionary<string, List<string>>
         {
             ["ANON"] = new() { "clear", "disconnect", "login", "register" },
-            ["ALL"] = new() { "clear", "disconnect", "showtables", "showtable", "logout", "deleteacc" ,"edit" },
+            ["ALL"] = new() { "clear", "disconnect", "showtables", "showtable", "logout", "deleteacc", "edit" },
             ["ADMIN"] = new() { "user add", "user update", "user assign-role", "user list", "analytics" },
             ["BOZO"] = new() { "user add", "user update", "user assign-role", "user list", "analytics" },
-            ["CUISINIER"] = new() { "cook clients", "cook stats", "cook dishoftheday", "cook sales", "cook dishes", "cook newdish" },
-            ["CLIENT"] = new() { "showtable", "showtables", "client newc", "client orders", "client cancel", "client order-travel" }
+            ["CUISINIER"] = new() { "changerole", "cook clients", "cook stats", "cook dishoftheday", "cook sales", "cook dishes", "cook newdish" },
+            ["CLIENT"] = new() { "changerole", "showtable", "showtables", "client newc", "client orders", "client cancel", "client order-travel" }
         };
 
         var table = new Table()
@@ -106,6 +106,7 @@ internal class HelpCommand : ICommand
         "deleteacc" => "Delete the user account",
         "register" => "Register an account",
         "edit" => "Edit user profile",
+        "changerole" => "Change your role with the other one available",
         _ => "No description available."
     };
 }
