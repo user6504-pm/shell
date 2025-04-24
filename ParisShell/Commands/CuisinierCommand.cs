@@ -6,6 +6,7 @@ using System.ComponentModel.Design;
 using System.Drawing;
 using Org.BouncyCastle.Tls;
 using System.Security;
+using System.Drawing.Text;
 
 namespace ParisShell.Commands
 {
@@ -47,7 +48,7 @@ namespace ParisShell.Commands
 
             if (args.Length == 0)
             {
-                Shell.PrintWarning("Usage: cook clients | stats | dishoftheday| sales | dishes | newdish | addquantity | commands | verifycommands");
+                Shell.PrintWarning("Usage: cook clients | stats | dishoftheday| sales | dishes | newdish | addquantity | commands | verifycommands | delivery");
                 return;
             }
 
@@ -82,6 +83,9 @@ namespace ParisShell.Commands
                     break;
                 case "verifycommands":
                     VerifyCommand();
+                    break;
+                case "delivery":
+                    Delivery();
                     break;
                 default:
 
@@ -496,19 +500,19 @@ namespace ParisShell.Commands
             AnsiConsole.MarkupLine("[green]Orders made for your dishes:[/]");
 
             MySqlCommand selectCmd = new MySqlCommand(@"
-        SELECT 
+            SELECT 
             p.plat_name AS Plat,
             u.nom AS ClientNom,
             u.prenom AS ClientPrenom,
             c.quantite AS Quantite,
             c.commande_id as Id_Command,
             c.statut AS Statut
-        FROM commandes c
-        JOIN plats p ON c.plat_id = p.plat_id
-        JOIN clients cl ON c.client_id = cl.client_id
-        JOIN users u ON cl.client_id = u.user_id
-        WHERE p.user_id = @uid
-        ORDER BY c.date_commande DESC;",
+            FROM commandes c
+            JOIN plats p ON c.plat_id = p.plat_id
+            JOIN clients cl ON c.client_id = cl.client_id
+            JOIN users u ON cl.client_id = u.user_id
+            WHERE p.user_id = @uid
+            ORDER BY c.date_commande DESC;",
                 _sqlService.GetConnection());
 
             selectCmd.Parameters.AddWithValue("@uid", _session.CurrentUser.Id);
@@ -663,6 +667,90 @@ namespace ParisShell.Commands
                 AnsiConsole.MarkupLine($"[green]Command #{commandId} has been marked as ACCEPTEE and quantity updated.[/]");
             }
         }
+        private void Delivery()
+        {
+            AnsiConsole.Clear();
+            Commands(); 
+
+            int commandId = -1;
+            string platName = "";
+            string clientName = "";
+            string status = "";
+            bool found = false;
+
+            while (!found)
+            {
+                int inputId = AnsiConsole.Ask<int>("Enter the [green]Command ID[/] you want to mark as delivered (0 to cancel):");
+                if (inputId == 0)
+                {
+                    AnsiConsole.MarkupLine("[yellow]Delivery update cancelled by user.[/]");
+                    return;
+                }
+
+                string query = @"
+                SELECT c.commande_id, p.plat_name, u.nom, u.prenom, c.statut
+                FROM commandes c
+                JOIN plats p ON c.plat_id = p.plat_id
+                JOIN clients cl ON c.client_id = cl.client_id
+                JOIN users u ON cl.client_id = u.user_id
+                WHERE c.commande_id = @cid AND p.user_id = @uid";
+
+                MySqlCommand checkCmd = new MySqlCommand(query, _sqlService.GetConnection());
+                checkCmd.Parameters.AddWithValue("@cid", inputId);
+                checkCmd.Parameters.AddWithValue("@uid", _session.CurrentUser.Id);
+
+                MySqlDataReader reader = checkCmd.ExecuteReader();
+
+                if (reader.Read())
+                {
+                    commandId = reader.GetInt32("commande_id");
+                    platName = reader.GetString("plat_name");
+                    clientName = $"{reader.GetString("prenom")} {reader.GetString("nom")}";
+                    status = reader.GetString("statut");
+
+                    if (status != "EN_COURS_DE_LIVRAISON")
+                    {
+                        AnsiConsole.MarkupLine($"[red]This command is not currently in delivery (current status: [yellow]{status}[/]).[/]");
+                    }
+                    else
+                    {
+                        found = true;
+                    }
+                }
+                else
+                {
+                    AnsiConsole.MarkupLine("This [red]command[/] does not exist or does not belong to your dishes.");
+                }
+
+                reader.Close();
+                checkCmd.Dispose();
+            }
+
+            string confirm = AnsiConsole.Prompt(
+                new SelectionPrompt<string>()
+                    .Title($"Mark command [yellow]#{commandId}[/] for dish [blue]{platName}[/] as [green]delivered[/]?")
+                    .AddChoices("Yes", "No")
+            );
+
+            if (confirm == "No")
+            {
+                AnsiConsole.MarkupLine("[yellow]Delivery status update canceled.[/]");
+                return;
+            }
+
+            MySqlCommand updateCmd = new MySqlCommand(@"
+            UPDATE commandes
+            SET statut = 'LIVREE'
+            WHERE commande_id = @cid",
+                _sqlService.GetConnection());
+
+            updateCmd.Parameters.AddWithValue("@cid", commandId);
+            updateCmd.ExecuteNonQuery();
+            updateCmd.Dispose();
+
+            AnsiConsole.MarkupLine($"[green]Command #{commandId} has been marked as 'LIVREE'.[/]");
+        }
+
     }
 }
 
