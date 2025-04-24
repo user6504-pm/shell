@@ -151,7 +151,7 @@ namespace ParisShell.Commands
         private void ShowDishOfTheDay()
         {
             string query = @"
-                SELECT plat_name AS 'name', plat_id AS 'ID', type_plat AS 'Type',
+                SELECT plat_name AS 'Name', plat_id AS 'ID', type_plat AS 'Type',
                        nb_personnes AS 'People', 
                        CONCAT(prix_par_personne) AS 'Price'
                 FROM plats
@@ -164,8 +164,8 @@ namespace ParisShell.Commands
             _sqlService.ExecuteAndDisplay(query, parameters);
         }
 
-        /// <summary>
         /// Displays total sales and quantity sold for each dish created by the cook.
+        /// <summary>
         /// </summary>
         private void ShowSales()
         {
@@ -421,7 +421,7 @@ namespace ParisShell.Commands
 
             cmd.ExecuteNonQuery();
             cmd.Dispose();
-            AnsiConsole.WriteLine("Dish [green]successfully[/] added");
+            AnsiConsole.MarkupLine("Dish [green]successfully[/] added");
         }
 
         /// <summary>
