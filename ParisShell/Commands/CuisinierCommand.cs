@@ -47,7 +47,7 @@ namespace ParisShell.Commands
 
             if (args.Length == 0)
             {
-                Shell.PrintWarning("Usage: cook clients | stats | dishoftheday| sales | dishes | newdish | addquantity | commands | verifycommand");
+                Shell.PrintWarning("Usage: cook clients | stats | dishoftheday| sales | dishes | newdish | addquantity | commands | verifycommands");
                 return;
             }
 
@@ -80,7 +80,7 @@ namespace ParisShell.Commands
                 case "commands":
                     Commands();
                     break;
-                case "verifycommand":
+                case "verifycommands":
                     VerifyCommand();
                     break;
                 default:

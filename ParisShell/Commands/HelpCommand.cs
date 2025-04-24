@@ -44,7 +44,7 @@ internal class HelpCommand : ICommand
             ["ALL"] = new() { "clear", "disconnect", "showtables", "showtable", "logout", "deleteacc", "edit" },
             ["ADMIN"] = new() { "user add", "user update", "user assign-role", "user list", "analytics" },
             ["BOZO"] = new() { "user add", "user update", "user assign-role", "user list", "analytics" },
-            ["CUISINIER"] = new() { "changerole", "cook clients", "cook stats", "cook dishoftheday", "cook sales", "cook dishes", "cook newdish" },
+            ["CUISINIER"] = new() { "changerole", "cook clients", "cook stats", "cook dishoftheday", "cook sales", "cook dishes", "cook newdish","cook commands","cook verifycommands" },
             ["CLIENT"] = new() { "changerole", "showtable", "showtables", "client neworder", "client orders", "client cancel", "client order-travel" }
         };
 
@@ -96,6 +96,8 @@ internal class HelpCommand : ICommand
         "cook stats" => "View dish statistics.",
         "cook dishoftheday" => "Display today’s dish.",
         "cook sales" => "Show total sales by dish.",
+        "cook verifycommands" => "Make possible to change the status of the command",
+        "cook commands" => "Show the commands of the cook",
         "cook dishes" => "Show total dishes made by the cook.",
         "cook newdish" => "Create a new dish.",
         "client order-travel" => "Show the path of the order on the map.",
