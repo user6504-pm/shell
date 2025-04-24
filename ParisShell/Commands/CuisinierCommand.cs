@@ -151,9 +151,9 @@ namespace ParisShell.Commands
         private void ShowDishOfTheDay()
         {
             string query = @"
-                SELECT plat_id AS 'ID', type_plat AS 'Type',
+                SELECT plat_name AS 'name', plat_id AS 'ID', type_plat AS 'Type',
                        nb_personnes AS 'People', 
-                       CONCAT(prix_par_personne, '€') AS 'Price'
+                       CONCAT(prix_par_personne) AS 'Price'
                 FROM plats
                 WHERE user_id = @_id AND date_fabrication = CURDATE()";
 
