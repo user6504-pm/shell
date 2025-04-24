@@ -5,7 +5,9 @@ using ParisShell.Models;
 using ParisShell.Services;
 using SkiaSharp;
 using Spectre.Console;
+using System.ComponentModel.Design;
 using System.Diagnostics;
+using System.Diagnostics.Tracing;
 
 namespace ParisShell.Commands
 {
@@ -50,13 +52,13 @@ namespace ParisShell.Commands
 
             if (args.Length == 0)
             {
-                Shell.PrintWarning("Usage: client newc | orders | cancel | order-travel (id)");
+                Shell.PrintWarning("Usage: client neworder | orders | cancel | order-travel (id)");
                 return;
             }
 
             switch (args[0])
             {
-                case "newc":
+                case "neworder":
                     NewCommand();
                     break;
                 case "orders":
@@ -318,19 +320,6 @@ namespace ParisShell.Commands
             insertCmd.ExecuteNonQuery();
             insertCmd.Dispose();
 
-            int nouvelleQuantite = platSelectionne.Quantite - quantityOrdered;
-
-            MySqlCommand updateCmd = new MySqlCommand(@"
-            UPDATE plats
-            SET quantite = @newQty
-            WHERE plat_id = @pid;",
-                _sqlService.GetConnection());
-
-            updateCmd.Parameters.AddWithValue("@newQty", nouvelleQuantite);
-            updateCmd.Parameters.AddWithValue("@pid", platSelectionne.Id);
-            updateCmd.ExecuteNonQuery();
-            updateCmd.Dispose();
-
             AnsiConsole.Clear();
             AnsiConsole.MarkupLine($"[green] Order recorded for dish '{platSelectionne.Name}' (ID {platSelectionne.Id}, {quantityOrdered} unit(s)).[/]");
         }
@@ -367,7 +356,6 @@ namespace ParisShell.Commands
 
             if (hasOrders)
             {
-                // Create and populate a styled table
                 Table table = new Table().Border(TableBorder.Rounded);
                 table.AddColumns("ID Commande", "Nom du plat", "Type", "Nationalité", "Quantité", "Prix total", "Date", "Statut");
 
@@ -404,18 +392,24 @@ namespace ParisShell.Commands
             ShowMyOrders(); 
 
             int orderId = -1;
-            string statut = null;
+            string status = null;
             int IdDish = -1;
             int quantity = 0;
+            bool found = false;
 
-            while (statut == null)
+            while (!found)
             {
-                int entry = AnsiConsole.Ask<int>("Enter the [green]Order ID[/] to cancel:");
+                int entry = AnsiConsole.Ask<int>("Enter the [green]Order ID[/] to cancel (0 to cancel) :");
+                if (entry == 0)
+                {
+                    AnsiConsole.MarkupLine("Cancellation aborted by the user");
+                    return;
+                }
 
                 string checkQuery = @"
-            SELECT statut, plat_id, quantite
-            FROM commandes 
-            WHERE commande_id = @oid AND client_id = @cid";
+                SELECT statut, plat_id, quantite
+                FROM commandes 
+                WHERE commande_id = @oid AND client_id = @cid";
 
                 MySqlCommand checkCmd = new MySqlCommand(checkQuery, _sqlService.GetConnection());
                 checkCmd.Parameters.AddWithValue("@oid", entry);
@@ -424,25 +418,29 @@ namespace ParisShell.Commands
                 MySqlDataReader reader = checkCmd.ExecuteReader();
                 if (reader.Read())
                 {
-                    statut = reader.GetString("statut");
+                    status = reader.GetString("statut");
                     IdDish = reader.GetInt32("plat_id");
                     quantity = reader.GetInt32("quantite");
                     orderId = entry;
+                    if (status != "EN_ATTENTE")
+                    {
+                        AnsiConsole.MarkupLine("Only orders with status [green]EN_ATTENTE[/] can be canceled. Try again");
+                    }
+                    else found = true;
                 }
-                else
+                else if (entry != 0 && !found)
                 {
-                    Shell.PrintError("Order not found or does not belong to you. Try again.");
+                    AnsiConsole.MarkupLine("[red]Order not found or does not belong to you[/]. Try again.");
                 }
+
+
+
 
                 reader.Close();
                 checkCmd.Dispose();
             }
 
-            if (statut != "EN_COURS")
-            {
-                Shell.PrintWarning("Only orders with status EN_COURS can be canceled.");
-                return;
-            }
+
 
             string confirmation = AnsiConsole.Prompt(
                 new SelectionPrompt<string>()
@@ -455,17 +453,16 @@ namespace ParisShell.Commands
                 AnsiConsole.MarkupLine("[yellow]Cancellation aborted by the user.[/]");
                 return;
             }
+            
+            MySqlCommand statusCmd = new MySqlCommand(@"
+                UPDATE commandes
+                SET statut = 'ANNULEE'
+                WHERE commande_id = @cid",
+                _sqlService.GetConnection());
 
-            string updatePlatQuery = @"
-            UPDATE plats 
-            SET quantite = quantite + @qte 
-            WHERE plat_id = @pid";
-
-            MySqlCommand updatePlatCmd = new MySqlCommand(updatePlatQuery, _sqlService.GetConnection());
-            updatePlatCmd.Parameters.AddWithValue("@qte", quantity);
-            updatePlatCmd.Parameters.AddWithValue("@pid", IdDish);
-            updatePlatCmd.ExecuteNonQuery();
-            updatePlatCmd.Dispose();
+            statusCmd.Parameters.AddWithValue("@cid", IdDish);
+            statusCmd.ExecuteNonQuery();
+            statusCmd.Dispose();
 
             string cancelQuery = @"
             UPDATE commandes 
@@ -479,6 +476,10 @@ namespace ParisShell.Commands
 
             AnsiConsole.Clear();
             AnsiConsole.MarkupLine("[yellow]Cancellation done.[/]");
+
+
+            
+
         }
     }
 }

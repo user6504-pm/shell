@@ -2,6 +2,10 @@
 using MySql.Data.MySqlClient;
 using ParisShell.Services;
 using MySqlX.XDevAPI.CRUD;
+using System.ComponentModel.Design;
+using System.Drawing;
+using Org.BouncyCastle.Tls;
+using System.Security;
 
 namespace ParisShell.Commands
 {
@@ -43,7 +47,7 @@ namespace ParisShell.Commands
 
             if (args.Length == 0)
             {
-                Shell.PrintWarning("Usage: cook clients | stats | dishoftheday| sales | dishes | newdish | addquantity");
+                Shell.PrintWarning("Usage: cook clients | stats | dishoftheday| sales | dishes | newdish | addquantity | commands | verifycommand");
                 return;
             }
 
@@ -73,9 +77,16 @@ namespace ParisShell.Commands
                 case "remove":
                     Remove();
                     break;
-                default:
-                    Shell.PrintError("Unknown subcommand.");
+                case "commands":
+                    Commands();
                     break;
+                case "verifycommand":
+                    VerifyCommand();
+                    break;
+                default:
+
+                Shell.PrintError("Unknown subcommand.");
+                break;
             }
         }
 
@@ -333,8 +344,8 @@ namespace ParisShell.Commands
 
 
             int addition = -1;
-            
-            while(addition < 0)
+
+            while (addition < 0)
             {
                 addition = AnsiConsole.Ask<int>("Enter [green]quantity[/] to add (must be positive):");
             }
@@ -478,6 +489,179 @@ namespace ParisShell.Commands
             deleteCmd.Dispose();
             AnsiConsole.Clear();
             AnsiConsole.MarkupLine("[yellow]Dish removed.[/]");
+        }
+        private void Commands()
+        {
+            AnsiConsole.Clear();
+            AnsiConsole.MarkupLine("[green]Orders made for your dishes:[/]");
+
+            MySqlCommand selectCmd = new MySqlCommand(@"
+        SELECT 
+            p.plat_name AS Plat,
+            u.nom AS ClientNom,
+            u.prenom AS ClientPrenom,
+            c.quantite AS Quantite,
+            c.commande_id as Id_Command,
+            c.statut AS Statut
+        FROM commandes c
+        JOIN plats p ON c.plat_id = p.plat_id
+        JOIN clients cl ON c.client_id = cl.client_id
+        JOIN users u ON cl.client_id = u.user_id
+        WHERE p.user_id = @uid
+        ORDER BY c.date_commande DESC;",
+                _sqlService.GetConnection());
+
+            selectCmd.Parameters.AddWithValue("@uid", _session.CurrentUser.Id);
+
+            MySqlDataReader reader = selectCmd.ExecuteReader();
+
+            if (!reader.HasRows)
+            {
+                AnsiConsole.MarkupLine("[yellow]No commands found for your dishes.[/]");
+                reader.Close();
+                selectCmd.Dispose();
+                return;
+            }
+
+            Table table = new Table().Border(TableBorder.Rounded);
+            table.AddColumns("Id_Command", "Dish", "Client", "Quantity", "Statut");
+
+            while (reader.Read())
+            {
+                string dishName = reader.GetString("Plat");
+                string clientName = $"{reader.GetString("ClientPrenom")} {reader.GetString("ClientNom")}";
+                string quantity = reader.GetInt32("Quantite").ToString();
+                string commande_id = reader.GetInt32("Id_Command").ToString();
+                string status = reader.GetString("Statut");
+
+                table.AddRow(commande_id, dishName, clientName, quantity, status);
+            }
+
+            reader.Close();
+            selectCmd.Dispose();
+
+            AnsiConsole.Write(table);
+        }
+        private void VerifyCommand()
+        {
+            Commands();
+            int commandId = -1;
+            string platName = "";
+            string clientName = "";
+            string status = "";
+            bool found = false;
+
+            while (!found)
+            {
+                int inputId = AnsiConsole.Ask<int>("Enter the [green]Command ID[/] you want to verify (0 to cancel) :");
+                if (inputId == 0)
+                {
+                    AnsiConsole.WriteLine("Verification aborted by the user");
+                    return;
+                }
+                string query = @"
+                SELECT c.commande_id, p.plat_name, u.nom, u.prenom, c.statut
+                    FROM commandes c
+                    JOIN plats p ON c.plat_id = p.plat_id
+                    JOIN clients cl ON c.client_id = cl.client_id
+                    JOIN users u ON cl.client_id = u.user_id
+                    WHERE c.commande_id = @cid AND p.user_id = @uid";
+
+                MySqlCommand checkCmd = new MySqlCommand(query, _sqlService.GetConnection());
+                checkCmd.Parameters.AddWithValue("@cid", inputId);
+                checkCmd.Parameters.AddWithValue("@uid", _session.CurrentUser.Id);
+
+                MySqlDataReader reader = checkCmd.ExecuteReader();
+                if (reader.Read())
+                {
+                    commandId = reader.GetInt32("commande_id");
+                    platName = reader.GetString("plat_name");
+                    clientName = $"{reader.GetString("prenom")} {reader.GetString("nom")}";
+                    status = reader.GetString("statut");
+                    if (status != "EN_ATTENTE")
+                        AnsiConsole.MarkupLine("[red]Status[/] different from [green]'EN_ATTENTE'[/].\nPlease try again");
+                    else found = true;
+
+                }
+
+
+                else if (inputId != 0 && !found)
+                    AnsiConsole.MarkupLine("This [red]command[/] does not exist or does not belong to your dishes. Please try again.");
+
+
+                reader.Close();
+                checkCmd.Dispose();
+            }
+
+
+            string confirmation = AnsiConsole.Prompt(
+                new SelectionPrompt<string>()
+                    .Title($"Do you want to [green]accept[/] or [red]refuse[/] the command for dish [yellow]{platName}[/] from client [blue]{clientName}[/]?")
+                    .AddChoices("ACCEPTEE", "REFUSEE", "Cancel")
+            );
+
+            if (confirmation == "Cancel")
+            {
+                AnsiConsole.MarkupLine("[yellow]Verification canceled by user.[/]");
+                return;
+            }
+            if (confirmation == "REFUSEE")
+            {
+                MySqlCommand statusCmd = new MySqlCommand(@"
+                UPDATE commandes
+                SET statut = 'REFUSEE'
+                WHERE commande_id = @cid",
+                    _sqlService.GetConnection());
+
+                statusCmd.Parameters.AddWithValue("@cid", commandId);
+                statusCmd.ExecuteNonQuery();
+                statusCmd.Dispose();
+                AnsiConsole.MarkupLine($"[green]Command #{commandId} has been marked REFUSED.[/]");
+            }
+            if (confirmation == "ACCEPTEE")
+            {
+                MySqlCommand statusCmd = new MySqlCommand(@"
+                UPDATE commandes
+                SET statut = 'EN_COURS_DE_LIVRAISON'
+                WHERE commande_id = @cid",
+                    _sqlService.GetConnection());
+
+                statusCmd.Parameters.AddWithValue("@cid", commandId);
+                statusCmd.ExecuteNonQuery();
+                statusCmd.Dispose();
+
+                MySqlCommand getDetailsCmd = new MySqlCommand(@"
+                SELECT c.quantite, c.plat_id
+                FROM commandes c
+                WHERE c.commande_id = @cid",
+                    _sqlService.GetConnection());
+
+                getDetailsCmd.Parameters.AddWithValue("@cid", commandId);
+
+                MySqlDataReader detailsReader = getDetailsCmd.ExecuteReader();
+                int quantity = 0;
+                int platId = 0;
+                if (detailsReader.Read())
+                {
+                    quantity = detailsReader.GetInt32("quantite");
+                    platId = detailsReader.GetInt32("plat_id");
+                }
+                detailsReader.Close();
+                getDetailsCmd.Dispose();
+
+                MySqlCommand updatePlatCmd = new MySqlCommand(@"
+                UPDATE plats 
+                SET quantite = quantite - @qte 
+                WHERE plat_id = @pid",
+                    _sqlService.GetConnection());
+
+                updatePlatCmd.Parameters.AddWithValue("@qte", quantity);
+                updatePlatCmd.Parameters.AddWithValue("@pid", platId);
+                updatePlatCmd.ExecuteNonQuery();
+                updatePlatCmd.Dispose();
+
+                AnsiConsole.MarkupLine($"[green]Command #{commandId} has been marked as ACCEPTEE and quantity updated.[/]");
+            }
         }
     }
 }

@@ -126,7 +126,7 @@ namespace ParisShell.Commands
                     plat_id INT NOT NULL,
                     date_commande DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
                     quantite INT NOT NULL,
-                    statut ENUM('EN_COURS','LIVREE','ANNULEE') DEFAULT 'EN_COURS',
+                    statut ENUM('EN_ATTENTE','EN_COURS_DE_LIVRAISON','LIVREE','ANNULEE','REFUSEE') DEFAULT 'EN_ATTENTE',
                     FOREIGN KEY (client_id) REFERENCES clients(client_id) ON UPDATE CASCADE ON DELETE CASCADE,
                     FOREIGN KEY (plat_id) REFERENCES plats(plat_id) ON UPDATE CASCADE ON DELETE CASCADE
                 );",

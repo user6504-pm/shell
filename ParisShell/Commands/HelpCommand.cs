@@ -45,7 +45,7 @@ internal class HelpCommand : ICommand
             ["ADMIN"] = new() { "user add", "user update", "user assign-role", "user list", "analytics" },
             ["BOZO"] = new() { "user add", "user update", "user assign-role", "user list", "analytics" },
             ["CUISINIER"] = new() { "changerole", "cook clients", "cook stats", "cook dishoftheday", "cook sales", "cook dishes", "cook newdish" },
-            ["CLIENT"] = new() { "changerole", "showtable", "showtables", "client newc", "client orders", "client cancel", "client order-travel" }
+            ["CLIENT"] = new() { "changerole", "showtable", "showtables", "client neworder", "client orders", "client cancel", "client order-travel" }
         };
 
         var table = new Table()
@@ -99,7 +99,7 @@ internal class HelpCommand : ICommand
         "cook dishes" => "Show total dishes made by the cook.",
         "cook newdish" => "Create a new dish.",
         "client order-travel" => "Show the path of the order on the map.",
-        "client newc" => "Place a new order.",
+        "client neworder" => "Place a new order.",
         "client cancel" => "Cancel an order.",
         "client orders" => "Show the client's orders.",
         "cook addquantity" => "Add quantity to a dish.",
