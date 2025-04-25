@@ -1,34 +1,20 @@
 ﻿using MySql.Data.MySqlClient;
 using ParisShell.Services;
 using ParisShell;
-
 using Spectre.Console;
 
-/// <summary>
-/// Command allowing users to edit their personal account information.
-/// </summary>
 internal class EditCommand : ICommand
 {
-    /// <summary>
-    /// The command name used in the shell.
-    /// </summary>
     public string Name => "edit";
-
     private readonly SqlService _sqlService;
     private readonly Session _session;
 
-    /// <summary>
-    /// Initializes the EditCommand with required services.
-    /// </summary>
     public EditCommand(SqlService sqlService, Session session)
     {
         _sqlService = sqlService;
         _session = session;
     }
 
-    /// <summary>
-    /// Executes the user information update process based on provided arguments.
-    /// </summary>
     public void Execute(string[] args)
     {
         if (!_session.IsAuthenticated)
@@ -48,19 +34,19 @@ internal class EditCommand : ICommand
         switch (args[0].ToLower())
         {
             case "name":
-                UpdateField(userId, "prenom", Ask("New first name"));
+                UpdateField(userId, "prenom", AskValidatedName("New first name"));
                 break;
             case "lastname":
-                UpdateField(userId, "nom", Ask("New last name"));
+                UpdateField(userId, "nom", AskValidatedName("New last name"));
                 break;
             case "address":
-                UpdateField(userId, "adresse", Ask("New address"));
+                UpdateField(userId, "adresse", AskValidatedAddress("New address"));
                 break;
             case "phone":
-                UpdateField(userId, "telephone", Ask("New phone"));
+                UpdateField(userId, "telephone", AskValidatedPhone("New phone"));
                 break;
             case "password":
-                UpdateField(userId, "mdp", AskSecret("New password"));
+                UpdateField(userId, "mdp", AskValidatedPassword("New password"));
                 break;
             case "full":
                 UpdateFull(userId);
@@ -71,9 +57,6 @@ internal class EditCommand : ICommand
         }
     }
 
-    /// <summary>
-    /// Updates a specific field in the user's row in the database.
-    /// </summary>
     private void UpdateField(int id, string field, string value)
     {
         string query = $"UPDATE users SET {field} = @val WHERE user_id = @id";
@@ -82,21 +65,18 @@ internal class EditCommand : ICommand
         cmd.Parameters.AddWithValue("@id", id);
         int rows = cmd.ExecuteNonQuery();
         if (rows > 0)
-            Shell.PrintSucces($"Field '{field}' successfully updated.");
+            Shell.PrintSucces($"[green]Field '{field}' successfully updated.[/]");
         else
-            Shell.PrintWarning("No update performed.");
+            Shell.PrintWarning("[yellow]No update performed.[/]");
     }
 
-    /// <summary>
-    /// Prompts the user to update all editable fields at once.
-    /// </summary>
     private void UpdateFull(int id)
     {
-        var firstname = Ask("New first name");
-        var lastname = Ask("New last name");
-        var adress = Ask("New address");
-        var phone = Ask("Phone");
-        var pwd = AskSecret("New password");
+        var firstname = AskValidatedName("New first name");
+        var lastname = AskValidatedName("New last name");
+        var address = AskValidatedAddress("New address");
+        var phone = AskValidatedPhone("Phone");
+        var pwd = AskValidatedPassword("New password");
 
         using var cmd = new MySqlCommand(@"
             UPDATE users 
@@ -104,25 +84,63 @@ internal class EditCommand : ICommand
             WHERE user_id=@id", _sqlService.GetConnection());
         cmd.Parameters.AddWithValue("@n", firstname);
         cmd.Parameters.AddWithValue("@p", lastname);
-        cmd.Parameters.AddWithValue("@a", adress);
+        cmd.Parameters.AddWithValue("@a", address);
         cmd.Parameters.AddWithValue("@t", phone);
         cmd.Parameters.AddWithValue("@m", pwd);
         cmd.Parameters.AddWithValue("@id", id);
 
         int rows = cmd.ExecuteNonQuery();
         if (rows > 0)
-            Shell.PrintSucces("User successfully updated.");
+            Shell.PrintSucces("[green]User successfully updated.[/]");
         else
-            Shell.PrintWarning("No update performed.");
+            Shell.PrintWarning("[yellow]No update performed.[/]");
     }
 
-    /// <summary>
-    /// Prompts the user for visible input.
-    /// </summary>
-    private string Ask(string label) => AnsiConsole.Ask<string>($"[blue]{label} :[/]");
+    private string AskValidatedName(string label)
+    {
+        string value;
+        do
+        {
+            value = AnsiConsole.Ask<string>($"[blue]{label}:[/]");
+            if (string.IsNullOrWhiteSpace(value) || !value.All(char.IsLetter))
+                Shell.PrintWarning("Name must only contain letters.");
+        } while (string.IsNullOrWhiteSpace(value) || !value.All(char.IsLetter));
+        return value;
+    }
 
-    /// <summary>
-    /// Prompts the user for hidden (secret) input.
-    /// </summary>
-    private string AskSecret(string label) => AnsiConsole.Prompt(new TextPrompt<string>($"[red]{label} :[/]").Secret(' '));
+    private string AskValidatedAddress(string label)
+    {
+        string value;
+        do
+        {
+            value = AnsiConsole.Ask<string>($"[blue]{label}:[/]");
+            if (!value.Any(char.IsDigit) || value.Trim().Split(' ').Length < 2)
+                Shell.PrintWarning("Address must contain a street number and a street name.");
+        } while (!value.Any(char.IsDigit) || value.Trim().Split(' ').Length < 2);
+        return value;
+    }
+
+    private string AskValidatedPhone(string label)
+    {
+        string value;
+        do
+        {
+            value = AnsiConsole.Ask<string>($"[blue]{label}:[/]");
+            if (value.Length != 10 || !value.All(char.IsDigit) || !value.StartsWith("0"))
+                Shell.PrintWarning("Phone number must be exactly 10 digits and start with '0'.");
+        } while (value.Length != 10 || !value.All(char.IsDigit) || !value.StartsWith("0"));
+        return value;
+    }
+
+    private string AskValidatedPassword(string label)
+    {
+        string value;
+        do
+        {
+            value = AnsiConsole.Prompt(new TextPrompt<string>($"[red]{label}:[/]").Secret(' '));
+            if (value.Length < 6)
+                Shell.PrintWarning("Password must be at least 6 characters.");
+        } while (value.Length < 6);
+        return value;
+    }
 }
