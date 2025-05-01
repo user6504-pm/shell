@@ -42,7 +42,7 @@ namespace ParisShell.Graph {
                 Console.WriteLine(lien);
             }
         }
-
+//---------------------------------------------------Parcours du Graphe------------------------------------------------------------
         public void ParcoursLargeur(Noeud<T> depart) {
             if (!noeuds.Contains(depart)) {
                 Console.WriteLine("Le nœud de départ n'existe pas dans le graphe.");
@@ -173,6 +173,7 @@ namespace ParisShell.Graph {
             return false;
         }
 
+//---------------------------------------------------------------Plus Court Chemins----------------------------------------------------------------
         /// <summary>
         /// Implémentation de l'algorithme de Dijkstra pour trouver les distances minimales depuis un noeud source
         /// - Ne fonctionne qu'avec des poids positifs
@@ -556,7 +557,110 @@ namespace ParisShell.Graph {
             chemin.Insert(0, depart);
             return chemin;
         }
+        // ------------------------------------------------Coloration de graphe----------------------------------------------------------
+        private int GetDegre(Noeud<T> noeud)
+        {
+            int degre = 0;
+            foreach (var lien in liens)
+            {
+                if (lien.Noeud1 == noeud || lien.Noeud2 == noeud) degre++;
+            }
+            return degre;
+        }
+        public List<Noeud<T>> GetVoisins(Noeud<T> noeud)
+        {
+            var voisins = new List<Noeud<T>>();
+            foreach (var lien in liens)
+            {
+                if (lien.Noeud1 == noeud)
+                {
+                    voisins.Add(lien.Noeud2);
+                }
+                else if (lien.Noeud2 == noeud)
+                {
+                    voisins.Add(lien.Noeud1);
+                }
+            }
+            return voisins;
+        }
+        public bool EstVoisin(Noeud<T> a, Noeud<T> b)
+        {
+            foreach (var lien in liens)
+            {
+                if (lien.Noeud1 == a && lien.Noeud2 == b)
+                {
+                    return true;
+                }
+                else if (lien.Noeud1 == b && lien.Noeud2 == a)
+                {
+                    return true;
+                }
+            }
+            return false;
+        }
+        public List<Noeud<T>> TrierNoeudsParDegreDécroissant_Insertion()
+        {
+            List<Noeud<T>> noeudsTries = new List<Noeud<T>>(noeuds);
 
+            for (int i = 1; i < noeudsTries.Count; i++)
+            {
+                var cle = noeudsTries[i];
+                int j = i - 1;
+
+                while (j >= 0 && GetDegre(noeudsTries[j]) < GetDegre(cle))
+                {
+                    noeudsTries[j + 1] = noeudsTries[j];
+                    j--;
+                }
+                noeudsTries[j + 1] = cle;
+            }
+
+            return noeudsTries;
+        }
+        public Dictionary<Noeud<T>, int> Welsh_Powell()
+        {
+            var noeudsTries = TrierNoeudsParDegreDécroissant_Insertion();
+            var Coloration = new Dictionary<Noeud<T>, int>();
+            int couleurActuelle = 0;
+
+            foreach (var Noeud1 in noeudsTries)
+            {
+                if (!Coloration.ContainsKey(Noeud1))
+                {
+                    couleurActuelle++;
+                    Coloration[Noeud1] = couleurActuelle; //coloration d'un premier noeud avec une couleur
+
+                    foreach (var Noeud2 in noeudsTries)
+                    {
+                        //vérifier les noeuds qui ne sont pas colorié et qui ne sont pas voisin au premier noeud colorié
+                        if (!Coloration.ContainsKey(Noeud2) && !EstVoisin(Noeud1, Noeud2))
+                        {
+                            bool peutColorier = true;
+                            //deuxième vérification : vérifier que ses voisins ne sont pas déjà colorié de cette même couleur
+                            foreach (var voisin in GetVoisins(Noeud2))
+                            {
+                                if (Coloration.ContainsKey(voisin) && Coloration[voisin] == couleurActuelle)
+                                {
+                                    peutColorier = false;
+                                    break;
+                                }
+                            }
+
+                            if (peutColorier)
+                            {
+                                Coloration[Noeud2] = couleurActuelle;
+                            }
+                        }
+                    }
+                }
+            }
+            return Coloration;
+        }
+
+        
+
+
+        //-----------------------------------------------------------Autres-------------------------------------------------------------------------------
         public void ObtenirCaracteristiques() {
             int nombreNoeuds = noeuds.Count;
             int nombreLiens = liens.Count;

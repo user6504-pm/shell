@@ -69,7 +69,7 @@ namespace ParisShell.Commands
                 PORT = "3306",
                 DATABASE = "livininparis_219",
                 UID = "root",
-                PASSWORD = "Gandalf"
+                PASSWORD = "root"
             };
 
             // Connect to MySQL

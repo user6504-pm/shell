@@ -275,7 +275,10 @@ namespace ParisShell.Commands
             AnsiConsole.Write(table);
 
             int IdDishSelected = AnsiConsole.Ask<int>("Enter the [green]ID[/] of the dish to order: (type 0 to cancel)");
-            if (IdDishSelected == 0) return;
+            if (IdDishSelected == 0) 
+            {
+                AnsiConsole.MarkupLine("[yellow]Order cancelled.[/]"); return;
+            }
 
             var platSelectionne = DisponibleDishes.FirstOrDefault(p => p.Id == IdDishSelected);
             if (platSelectionne == default)
@@ -389,8 +392,28 @@ namespace ParisShell.Commands
         /// </summary>
         private void CancelMyOrder()
         {
-            ShowMyOrders(); 
+            ShowMyOrders();
+            int userId = _session.CurrentUser.Id;
 
+            MySqlCommand verify = new MySqlCommand(@"
+                SELECT commande_id 
+                FROM commandes 
+                WHERE client_id = @cid",
+            _sqlService.GetConnection());
+
+            verify.Parameters.AddWithValue("@cid", userId);
+
+            MySqlDataReader verifyReader = verify.ExecuteReader();
+
+            if (!verifyReader.Read())
+            {
+                verifyReader.Close();
+                verify.Dispose();
+                return;
+            }
+
+            verifyReader.Close();
+            verify.Dispose();
             int orderId = -1;
             string status = null;
             int IdDish = -1;

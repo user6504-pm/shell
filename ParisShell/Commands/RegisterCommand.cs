@@ -141,9 +141,13 @@ namespace ParisShell.Commands
                 do
                 {
                     codesiren = AnsiConsole.Ask<string>("Siren number:");
-                    if (codesiren.Length != 14 || !codesiren.All(char.IsDigit))
-                        Shell.PrintWarning("SIREN must be exactly 14 digits.");
-                } while (codesiren.Length != 14 || !codesiren.All(char.IsDigit));
+                    string cleaned = codesiren.Replace(" ", "");
+
+                    if (cleaned.Length != 14 || !cleaned.All(char.IsDigit))
+                        Shell.PrintWarning("SIREN must be exactly 14 digits (spaces are ignored).");
+
+                } while (codesiren.Replace(" ", "").Length != 14 || !codesiren.Replace(" ", "").All(char.IsDigit));
+
 
                 string address;
                 do
@@ -157,9 +161,15 @@ namespace ParisShell.Commands
                 do
                 {
                     phone = AnsiConsole.Ask<string>("Phone:");
-                    if (phone.Length != 10 || !phone.All(char.IsDigit) || !phone.StartsWith("0"))
-                        Shell.PrintWarning("Phone number must be exactly 10 digits and start with '0'.");
-                } while (phone.Length != 10 || !phone.All(char.IsDigit) || !phone.StartsWith("0"));
+                    string cleaned = phone.Replace(" ", "");
+
+                    if (cleaned.Length != 10 || !cleaned.All(char.IsDigit) || !cleaned.StartsWith("0"))
+                        Shell.PrintWarning("Phone number must be exactly 10 digits and start with '0' (spaces are ignored).");
+
+                } while (phone.Replace(" ", "").Length != 10 ||
+                         !phone.Replace(" ", "").All(char.IsDigit) ||
+                         !phone.Replace(" ", "").StartsWith("0"));
+
 
                 string email;
                 do

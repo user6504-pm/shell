@@ -42,6 +42,12 @@ namespace ParisShell.Commands
         /// <param name="args">Command-line arguments (not used).</param>
         public void Execute(string[] args)
         {
+            if (!_sqlService.IsConnected)
+            {
+                Shell.PrintError("You must be logged to login.");
+                return;
+            }
+
             string email = AnsiConsole.Prompt(
                 new TextPrompt<string>("Email:")
                     .PromptStyle("blue"));

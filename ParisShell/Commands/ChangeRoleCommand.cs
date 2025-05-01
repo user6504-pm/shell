@@ -31,7 +31,12 @@ namespace ParisShell.Commands
                 Shell.PrintError("Access restricted to cooks and clients only.");
                 return;
             }
-            if(_session.IsInRole("CUISINIER"))
+            if (_session.CurrentUser.LastName.Any(char.IsDigit))
+            {
+                AnsiConsole.MarkupLine("[red]Role change denied: companies cannot switch to cook role.[/]");
+                return;
+            }
+            if (_session.IsInRole("CUISINIER"))
             {
                 AnsiConsole.WriteLine("Are you sure you want to change your role to CLIENT ?");
                 string role = AnsiConsole.Prompt(
