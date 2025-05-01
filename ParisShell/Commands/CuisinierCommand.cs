@@ -198,7 +198,6 @@ namespace ParisShell.Commands
         private void ShowDishes()
         {
             AnsiConsole.Clear();
-            AnsiConsole.MarkupLine("[green]Your dishes :[/]");
             List<(int Id, string Name, string Type, string Nationality, decimal Price, int Quantity)> plats = new List<(int, string, string, string, decimal, int)>();
             MySqlCommand selectCmd = new MySqlCommand(@"
                 SELECT plat_id, plat_name, type_plat, nationalite, prix_par_personne, quantite
@@ -433,9 +432,28 @@ namespace ParisShell.Commands
         /// </summary>
         private void Remove()
         {
+
             AnsiConsole.Clear();
             ShowDishes();
+            MySqlCommand verify = new MySqlCommand(@"
+            SELECT plat_id 
+            FROM plats 
+            WHERE user_id = @uid 
+            LIMIT 1;",
+            _sqlService.GetConnection());
 
+            verify.Parameters.AddWithValue("@uid", _session.CurrentUser.Id);
+            MySqlDataReader verifyReader = verify.ExecuteReader();
+
+            if (!verifyReader.Read())
+            {
+                verifyReader.Close();
+                verify.Dispose();
+                return;
+            }
+
+            verifyReader.Close();
+            verify.Dispose();
             int IdDish = -1;
             string DishName = "";
             bool found = false;
@@ -497,7 +515,6 @@ namespace ParisShell.Commands
         private void Commands()
         {
             AnsiConsole.Clear();
-            AnsiConsole.MarkupLine("[green]Orders made for your dishes:[/]");
 
             MySqlCommand selectCmd = new MySqlCommand(@"
             SELECT 
@@ -524,6 +541,7 @@ namespace ParisShell.Commands
                 AnsiConsole.MarkupLine("[yellow]No commands found for your dishes.[/]");
                 reader.Close();
                 selectCmd.Dispose();
+                bool verif = false;
                 return;
             }
 
@@ -549,6 +567,27 @@ namespace ParisShell.Commands
         private void VerifyCommand()
         {
             Commands();
+            MySqlCommand verif = new MySqlCommand(@"
+            SELECT c.commande_id
+            FROM commandes c
+            JOIN plats p ON c.plat_id = p.plat_id
+            WHERE p.user_id = @uid
+            LIMIT 1;",
+            _sqlService.GetConnection());
+
+            verif.Parameters.AddWithValue("@uid", _session.CurrentUser.Id);
+
+            MySqlDataReader readerverif = verif.ExecuteReader();
+
+            if (!readerverif.Read())
+            {
+                readerverif.Close();
+                verif.Dispose();
+                return;
+            }
+
+            readerverif.Close();
+            verif.Dispose();
             int commandId = -1;
             string platName = "";
             string clientName = "";
@@ -670,8 +709,24 @@ namespace ParisShell.Commands
         private void Delivery()
         {
             AnsiConsole.Clear();
-            Commands(); 
-
+            Commands();
+            MySqlCommand verif = new MySqlCommand(@"
+            SELECT c.commande_id
+            FROM commandes c
+            JOIN plats p ON c.plat_id = p.plat_id
+            WHERE p.user_id = @uid
+            LIMIT 1;",
+            _sqlService.GetConnection());
+            verif.Parameters.AddWithValue("@uid", _session.CurrentUser.Id);
+            MySqlDataReader readerverif = verif.ExecuteReader();
+            if (!readerverif.Read())
+            {
+                readerverif.Close();
+                verif.Dispose();
+                return;
+            }
+            readerverif.Close();
+            verif.Dispose();
             int commandId = -1;
             string platName = "";
             string clientName = "";
