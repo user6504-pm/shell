@@ -558,7 +558,7 @@ namespace ParisShell.Graph {
             return chemin;
         }
         // ------------------------------------------------Coloration de graphe----------------------------------------------------------
-        private int GetDegre(Noeud<T> noeud)
+        public int GetDegre(Noeud<T> noeud)
         {
             int degre = 0;
             foreach (var lien in liens)
@@ -657,8 +657,103 @@ namespace ParisShell.Graph {
             return Coloration;
         }
 
-        
+        public int EstimerNombreChromatique(Dictionary<Noeud<T>, int> coloration)
+        {
+            List<int> CouleursUniques = new List<int>();
+            foreach (var couleur in coloration)
+            {
+                if (!CouleursUniques.Contains(couleur.Value))
+                {
+                    CouleursUniques.Add(couleur.Value);
+                }
+            }
+            int nombreChromatique = CouleursUniques.Count;
+            return nombreChromatique;
 
+        }
+        public bool EstimerGrapheBiparti(int nombreChromatique)
+        {
+            if (nombreChromatique <= 2)
+            {
+                return true;
+            }
+            return false;
+        }
+
+        public bool EstimerGraphePlanaire(int nombreChromatique)
+        {
+            if (nombreChromatique <= 4)
+            {
+                return true;
+            }
+            return false;
+        }
+
+        public Dictionary<int, List<Noeud<T>>> TrouverGroupesIndependants(Dictionary<Noeud<T>, int> coloration)
+        {
+            var groupes = new Dictionary<int, List<Noeud<T>>>();
+
+            foreach (var noeudColoré in coloration)
+            {
+                if (!groupes.ContainsKey(noeudColoré.Value))
+                {
+                    groupes[noeudColoré.Value] = new List<Noeud<T>>();
+                }
+                groupes[noeudColoré.Value].Add(noeudColoré.Key);
+            }
+            return groupes;
+        }
+
+        public void AnalyserResultatsColoration()
+        {
+            Dictionary<Noeud<T>, int> coloration = Welsh_Powell();
+
+            if (coloration == null || coloration.Count == 0)
+            {
+                throw new InvalidOperationException("Aucun nœud n'a été coloré.");
+            }
+
+            Console.WriteLine("\n======Nombre minimal de couleurs=====");
+            int nombreChromatique = EstimerNombreChromatique(coloration);
+            Console.WriteLine("Nombre minimal de couleurs: " + nombreChromatique);
+
+            Console.WriteLine("\n=====Graphe Biparti=====");
+            bool EstBiparti = EstimerGrapheBiparti(nombreChromatique);
+            if (EstBiparti)
+            {
+                Console.WriteLine("Le graphe est biparti\nJustification : Au plus, 2 couleurs suffisent pour colorer le graphe");
+            }
+            else
+            {
+                Console.WriteLine("Le graphe n'est pas biparti\nJustification : Il nécessite plus de 2 couleurs pour colorer le graphe");
+            }
+
+            Console.WriteLine("\n=====Graphe Planaire=====");
+            bool EstPlanaire = EstimerGraphePlanaire(nombreChromatique);
+            if (EstPlanaire)
+            {
+                Console.WriteLine("D'après le Théorème des 4 couleurs, le graphe est probablement planaire");
+            }
+            else
+            {
+                Console.WriteLine("D'après le Théorème des 4 couleurs, le graphe n'est probablement pas planaire");
+            }
+
+            Console.WriteLine("\n=====Groupe indépendants=====");
+            var GroupeIndépendant = TrouverGroupesIndependants(coloration);
+            foreach (var Groupe in GroupeIndépendant)
+            {
+                string ligne = "Groupe " + Groupe.Key + ": [";
+                foreach (var noeud in Groupe.Value)
+                {
+                    ligne += noeud.Id + ",";
+                }
+                ligne = ligne.TrimEnd(',');
+                ligne += "]";
+                Console.WriteLine(ligne);
+            }
+
+        }
 
         //-----------------------------------------------------------Autres-------------------------------------------------------------------------------
         public void ObtenirCaracteristiques() {
