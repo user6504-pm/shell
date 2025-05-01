@@ -617,7 +617,48 @@ namespace ParisShell.Graph {
 
             return noeudsTries;
         }
+        public Dictionary<Noeud<T>, int> Welsh_Powell()
+        {
+            var noeudsTries = TrierNoeudsParDegreDécroissant_Insertion();
+            var Coloration = new Dictionary<Noeud<T>, int>();
+            int couleurActuelle = 0;
+
+            foreach (var Noeud1 in noeudsTries)
+            {
+                if (!Coloration.ContainsKey(Noeud1))
+                {
+                    couleurActuelle++;
+                    Coloration[Noeud1] = couleurActuelle; //coloration d'un premier noeud avec une couleur
+
+                    foreach (var Noeud2 in noeudsTries)
+                    {
+                        //vérifier les noeuds qui ne sont pas colorié et qui ne sont pas voisin au premier noeud colorié
+                        if (!Coloration.ContainsKey(Noeud2) && !EstVoisin(Noeud1, Noeud2))
+                        {
+                            bool peutColorier = true;
+                            //deuxième vérification : vérifier que ses voisins ne sont pas déjà colorié de cette même couleur
+                            foreach (var voisin in GetVoisins(Noeud2))
+                            {
+                                if (Coloration.ContainsKey(voisin) && Coloration[voisin] == couleurActuelle)
+                                {
+                                    peutColorier = false;
+                                    break;
+                                }
+                            }
+
+                            if (peutColorier)
+                            {
+                                Coloration[Noeud2] = couleurActuelle;
+                            }
+                        }
+                    }
+                }
+            }
+            return Coloration;
+        }
+
         
+
 
         //-----------------------------------------------------------Autres-------------------------------------------------------------------------------
         public void ObtenirCaracteristiques() {
