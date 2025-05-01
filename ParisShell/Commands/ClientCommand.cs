@@ -70,9 +70,14 @@ namespace ParisShell.Commands
                 case "order-travel":
                     OrderTravel(args);
                     break;
+                case "evaluate":
+                    EvaluateOrder();
+                    break;
                 default:
                     Shell.PrintError("Unknown subcommand.");
                     break;
+
+
             }
         }
 
@@ -178,6 +183,7 @@ namespace ParisShell.Commands
         /// </summary>
         private void NewCommand()
         {
+            var ratingsDict = GetAverageRatings();
             AnsiConsole.Clear();
 
             if (!_sqlService.IsConnected)
@@ -195,10 +201,10 @@ namespace ParisShell.Commands
             List<(int PlatId, string Name, string Type, string Nat, decimal Prix, int Quantite, int UserId)> platsTemp = new();
 
             MySqlCommand selectCmd = new MySqlCommand(@"
-        SELECT p.plat_id, p.plat_name, p.type_plat, p.nationalite, p.prix_par_personne, p.quantite, p.user_id
-        FROM plats p
-        WHERE p.quantite > 0
-        ORDER BY p.prix_par_personne;",
+            SELECT p.plat_id, p.plat_name, p.type_plat, p.nationalite, p.prix_par_personne, p.quantite, p.user_id
+            FROM plats p
+            WHERE p.quantite > 0
+            ORDER BY p.prix_par_personne;",
                 _sqlService.GetConnection());
 
             using (MySqlDataReader reader = selectCmd.ExecuteReader())
@@ -257,10 +263,12 @@ namespace ParisShell.Commands
             }
 
             Table table = new Table().Border(TableBorder.Rounded);
-            table.AddColumns("ID", "Name", "Type", "Nationality", "Price", "Quantity", "Time");
+            table.AddColumns("ID", "Name", "Type", "Nationality", "Price", "Quantity", "Time", "Notation");
 
             foreach (var d in DisponibleDishes)
             {
+                string note = ratingsDict.ContainsKey(d.Id) ? ratingsDict[d.Id] : "Pas encore noté";
+
                 table.AddRow(
                     d.Id.ToString(),
                     d.Name,
@@ -268,9 +276,11 @@ namespace ParisShell.Commands
                     d.Nationalite,
                     d.Prix.ToString(),
                     d.Quantite.ToString(),
-                    d.Temps.ToString("0") + " min"
+                    d.Temps.ToString("0") + " min",
+                    note
                 );
             }
+
 
             AnsiConsole.Write(table);
 
@@ -337,13 +347,13 @@ namespace ParisShell.Commands
         private void ShowMyOrders()
         {
             MySqlCommand cmd = new MySqlCommand(@"
-        SELECT c.commande_id, p.plat_name, p.type_plat, p.nationalite,
-               c.quantite, p.prix_par_personne,
-               c.date_commande, c.statut
-        FROM commandes c
-        JOIN plats p ON c.plat_id = p.plat_id
-        WHERE c.client_id = @cid
-        ORDER BY c.date_commande DESC;",
+                SELECT c.commande_id, p.plat_name, p.type_plat, p.nationalite,
+                c.quantite, p.prix_par_personne,
+                c.date_commande, c.statut
+                FROM commandes c
+                JOIN plats p ON c.plat_id = p.plat_id
+                WHERE c.client_id = @cid
+                ORDER BY c.date_commande DESC;",
                 _sqlService.GetConnection());
 
             cmd.Parameters.AddWithValue("@cid", _session.CurrentUser.Id);
@@ -503,6 +513,125 @@ namespace ParisShell.Commands
 
             
 
+        }
+        private void EvaluateOrder()
+        {
+            AnsiConsole.Clear();
+            AnsiConsole.MarkupLine("[green]Evaluate a delivered order:[/]");
+
+            MySqlCommand cmd = new MySqlCommand(@"
+                SELECT c.commande_id, p.plat_name, p.type_plat, p.nationalite,
+                c.quantite, p.prix_par_personne,
+                c.date_commande, c.statut
+                FROM commandes c
+                JOIN plats p ON c.plat_id = p.plat_id
+                WHERE c.client_id = @cid
+                AND c.statut = 'LIVREE'
+                AND c.commande_id NOT IN (SELECT commande_id FROM evaluations)
+                ORDER BY c.date_commande DESC;",
+                _sqlService.GetConnection());
+
+            cmd.Parameters.AddWithValue("@cid", _session.CurrentUser.Id);
+            MySqlDataReader reader = cmd.ExecuteReader();
+
+            List<int> orderIds = new();
+            Table table = new Table().Border(TableBorder.Rounded);
+            table.AddColumns("ID Commande", "Nom du plat", "Type", "Nationalité", "Quantité", "Prix total", "Date", "Statut");
+
+            while (reader.Read())
+            {
+                int id = reader.GetInt32("commande_id");
+                orderIds.Add(id);
+
+                table.AddRow(
+                    id.ToString(),
+                    reader["plat_name"].ToString(),
+                    reader["type_plat"].ToString(),
+                    reader["nationalite"].ToString(),
+                    reader["quantite"].ToString(),
+                    string.Format("{0:0.00}",
+                    Convert.ToDecimal(reader["prix_par_personne"]) * Convert.ToDecimal(reader["quantite"])),
+                    Convert.ToDateTime(reader["date_commande"]).ToString("yyyy-MM-dd HH:mm"),
+                    reader["statut"].ToString()
+                );
+            }
+
+            reader.Close();
+            cmd.Dispose();
+
+            if (orderIds.Count == 0)
+            {
+                AnsiConsole.MarkupLine("[yellow]No delivered orders to evaluate.[/]");
+                return;
+            }
+
+            AnsiConsole.MarkupLine("[bold green]Eligible orders for evaluation:[/]");
+            AnsiConsole.Write(table);
+
+            int orderId = -1;
+            while (!orderIds.Contains(orderId))
+            {
+                orderId = AnsiConsole.Ask<int>("Enter the [green]Order ID[/] to evaluate (0 to cancel):");
+                if (orderId == 0) return;
+
+                if (!orderIds.Contains(orderId))
+                    Shell.PrintError("Invalid ID or already evaluated.");
+            }
+
+            int rating = 0;
+            while (rating < 1 || rating > 5)
+            {
+                rating = AnsiConsole.Ask<int>("Enter a [green]rating[/] from 1 to 5:");
+                if (rating < 1 || rating > 5) Shell.PrintWarning("Rating must be between 1 and 5.");
+            }
+
+            string comment = AnsiConsole.Ask<string>("Enter an optional [blue]comment[/] (or press Enter to skip):");
+
+            MySqlCommand insertCmd = new MySqlCommand(@"
+            INSERT INTO evaluations (commande_id, note, commentaire)
+            VALUES (@oid, @note, @comment);",
+            _sqlService.GetConnection());
+
+            insertCmd.Parameters.AddWithValue("@oid", orderId);
+            insertCmd.Parameters.AddWithValue("@note", rating);
+            insertCmd.Parameters.AddWithValue("@comment", string.IsNullOrWhiteSpace(comment) ? DBNull.Value : comment);
+            insertCmd.ExecuteNonQuery();
+            insertCmd.Dispose();
+
+            AnsiConsole.MarkupLine($"[green]Evaluation saved for order #{orderId} with rating {rating}.[/]");
+        }
+        private Dictionary<int, string> GetAverageRatings()
+        {
+            Dictionary<int, string> ratings = new Dictionary<int, string>();
+
+            MySqlCommand cmd = new MySqlCommand(@"
+            SELECT p.plat_id, AVG(e.note) AS moyenne
+            FROM plats p
+            JOIN commandes c ON c.plat_id = p.plat_id
+            JOIN evaluations e ON e.commande_id = c.commande_id
+            GROUP BY p.plat_id;", _sqlService.GetConnection());
+
+            MySqlDataReader reader = cmd.ExecuteReader();
+
+            while (reader.Read())
+            {
+                int platId = reader.GetInt32("plat_id");
+
+                if (reader.IsDBNull(reader.GetOrdinal("moyenne")))
+                {
+                    ratings[platId] = "Pas encore noté";
+                }
+                else
+                {
+                    double moyenne = reader.GetDouble("moyenne");
+                    ratings[platId] = $"{moyenne:0.0} / 5";
+                }
+            }
+
+            reader.Close();
+            cmd.Dispose();
+
+            return ratings;
         }
     }
 }

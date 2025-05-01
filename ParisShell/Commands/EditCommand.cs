@@ -68,6 +68,27 @@ internal class EditCommand : ICommand
             Shell.PrintSucces($"[green]Field '{field}' successfully updated.[/]");
         else
             Shell.PrintWarning("[yellow]No update performed.[/]");
+        if (rows > 0)
+        {
+            MySqlCommand refreshCmd = new MySqlCommand(@"
+            SELECT nom, prenom, email, adresse
+            FROM users
+            WHERE user_id = @id", _sqlService.GetConnection());
+
+            refreshCmd.Parameters.AddWithValue("@id", id);
+            MySqlDataReader reader = refreshCmd.ExecuteReader();
+
+            if (reader.Read())
+            {
+                _session.CurrentUser.FirstName = reader.GetString("prenom");
+                _session.CurrentUser.LastName = reader.GetString("nom");
+            }
+
+            reader.Close();
+            refreshCmd.Dispose();
+
+        }
+
     }
 
     private void UpdateFull(int id)

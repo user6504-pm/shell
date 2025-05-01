@@ -136,18 +136,29 @@ namespace ParisShell.Commands
         private void ShowDishiesStats()
         {
             string query = @"
-                SELECT type_plat AS 'Dish Type', COUNT(*) AS 'Count'
-                FROM plats
-                WHERE user_id = @_id
-                GROUP BY type_plat
-                ORDER BY Count DESC";
+            SELECT 
+            p.plat_name AS 'Dish Name',
+            p.type_plat AS 'Dish Type',
+            p.nationalite AS 'Dish Nationality',
+            COUNT(c.commande_id) AS 'Count',
+            COALESCE(
+                CONCAT(ROUND(AVG(e.note), 1), '/5'), 
+                'Pas encore noté'
+            ) AS 'Average Rating'
+            FROM plats p
+            LEFT JOIN commandes c ON c.plat_id = p.plat_id
+            LEFT JOIN evaluations e ON c.commande_id = e.commande_id
+            WHERE p.user_id = @uid
+            GROUP BY p.plat_id, p.plat_name, p.type_plat, p.nationalite
+            ORDER BY p.plat_name;";
 
             var parameters = new Dictionary<string, object> {
-                { "@_id", _session.CurrentUser!.Id }
-            };
+        { "@uid", _session.CurrentUser!.Id }
+    };
 
             _sqlService.ExecuteAndDisplay(query, parameters);
         }
+
 
         /// <summary>
         /// Displays the dishes created today by the cook.
