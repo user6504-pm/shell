@@ -1,4 +1,5 @@
 ﻿using MySql.Data.MySqlClient;
+using ParisShell.Graph;
 using ParisShell.Services;
 using Spectre.Console;
 using System;
@@ -6,6 +7,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using ParisShell.Graph;
 
 namespace ParisShell.Commands
 {
@@ -52,21 +54,23 @@ namespace ParisShell.Commands
                 case "initc":
                     InitC();
                     break;
+                case "g":
+                    G();
+                    break;
                 default:
                     Shell.PrintError("Unknown subcommand.");
                     break;
             }
 
         }
-        private void InitC()
+        private void G()
         {
             var conn = _sqlService.GetConnection();
 
             var clientIds = new List<int>();
             var cookIds = new List<int>();
-            var plats = new List<(int platId, int userId)>();
+            List<(int clientId, int userId)> com = new();
 
-            // 1. Récupérer les utilisateurs CLIENT
             using (var cmd = new MySqlCommand(@"
         SELECT u.user_id FROM users u
         JOIN user_roles ur ON u.user_id = ur.user_id
@@ -81,7 +85,6 @@ namespace ParisShell.Commands
                 }
             }
 
-            // 2. Récupérer les utilisateurs CUISINIER
             using (var cmd = new MySqlCommand(@"
         SELECT u.user_id FROM users u
         JOIN user_roles ur ON u.user_id = ur.user_id
@@ -96,7 +99,75 @@ namespace ParisShell.Commands
                 }
             }
 
-            // 3. Récupérer les plats associés à chaque cuisinier
+            using (var cmd = new MySqlCommand("SELECT c.client_id, p.user_id FROM commandes c JOIN plats p ON c.plat_id = p.plat_id; ", conn))
+            using (var reader = cmd.ExecuteReader())
+            {
+                while (reader.Read())
+                {
+                    com.Add((reader.GetInt32("client_id"), reader.GetInt32("user_id")));
+                }
+            }
+
+            if (clientIds.Count == 0 || cookIds.Count == 0 || com.Count == 0)
+            {
+                Shell.PrintWarning("Missing clients, cooks or commands in the database.");
+                return;
+            }
+
+            var graph = new Graph<int>();
+            var noeuds = new Dictionary<int, Noeud<int>>();
+
+            foreach (var id in clientIds.Concat(cookIds).Distinct())
+            {
+                var noeud = new Noeud<int>(id, id);
+                graph.AjouterNoeud(noeud);
+                noeuds[id] = noeud;
+            }
+
+            foreach (var (clientId, userId) in com)
+            {
+                if (noeuds.TryGetValue(clientId, out var clientNode) && noeuds.TryGetValue(userId, out var cookNode))
+                {
+                    graph.AjouterLien(clientNode, cookNode, 1);
+                }
+            }
+        }
+        private void InitC()
+        {
+            var conn = _sqlService.GetConnection();
+
+            var clientIds = new List<int>();
+            var cookIds = new List<int>();
+            var plats = new List<(int platId, int userId)>();
+
+            using (var cmd = new MySqlCommand(@"
+        SELECT u.user_id FROM users u
+        JOIN user_roles ur ON u.user_id = ur.user_id
+        JOIN roles r ON ur.role_id = r.role_id
+        WHERE r.role_name = 'CLIENT';
+    ", conn))
+            using (var reader = cmd.ExecuteReader())
+            {
+                while (reader.Read())
+                {
+                    clientIds.Add(reader.GetInt32("user_id"));
+                }
+            }
+
+            using (var cmd = new MySqlCommand(@"
+        SELECT u.user_id FROM users u
+        JOIN user_roles ur ON u.user_id = ur.user_id
+        JOIN roles r ON ur.role_id = r.role_id
+        WHERE r.role_name = 'CUISINIER';
+    ", conn))
+            using (var reader = cmd.ExecuteReader())
+            {
+                while (reader.Read())
+                {
+                    cookIds.Add(reader.GetInt32("user_id"));
+                }
+            }
+
             using (var cmd = new MySqlCommand("SELECT plat_id, user_id FROM plats", conn))
             using (var reader = cmd.ExecuteReader())
             {
@@ -121,7 +192,6 @@ namespace ParisShell.Commands
                 int clientId = clientIds[rand.Next(clientIds.Count)];
                 var (platId, cookId) = plats[rand.Next(plats.Count)];
 
-                // Insérer commande si le cuisinier est différent du client
                 if (clientId != cookId)
                 {
                     using var insert = new MySqlCommand(@"
@@ -131,7 +201,7 @@ namespace ParisShell.Commands
 
                     insert.Parameters.AddWithValue("@client", clientId);
                     insert.Parameters.AddWithValue("@plat", platId);
-                    insert.Parameters.AddWithValue("@quantite", rand.Next(1, 4)); // 1 à 3
+                    insert.Parameters.AddWithValue("@quantite", rand.Next(1, 4));
 
                     insert.ExecuteNonQuery();
                 }
