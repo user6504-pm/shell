@@ -62,6 +62,11 @@ namespace ParisShell.Commands
                 password = "$j4aoW8b01";
             }
 
+            string pwd = AnsiConsole.Prompt(
+                new TextPrompt<string>("MySQL password [grey](root)[/]:")
+                .PromptStyle("red")
+                 .Secret(' '));
+
             // SQL server configuration
             var config = new SqlConnectionConfig
             {
@@ -69,7 +74,7 @@ namespace ParisShell.Commands
                 PORT = "3306",
                 DATABASE = "livininparis_219",
                 UID = "root",
-                PASSWORD = "root"
+                PASSWORD = $"{pwd}"
             };
 
             // Connect to MySQL

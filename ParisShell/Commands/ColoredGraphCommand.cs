@@ -2,15 +2,9 @@
 using ParisShell.Graph;
 using ParisShell.Services;
 using Spectre.Console;
-using System;
-using System.Collections.Generic;
-using System.Linq;
 using System.Text;
-using System.Threading.Tasks;
-using ParisShell.Graph;
 
-namespace ParisShell.Commands
-{
+namespace ParisShell.Commands {
 
     /// <summary>
     /// Command that trigger anything related to the graph coloration
@@ -131,6 +125,43 @@ namespace ParisShell.Commands
                     graph.AjouterLien(clientNode, cookNode, 1);
                 }
             }
+            var color = graph.Welsh_Powell();
+
+            var sb = new StringBuilder();
+
+            sb.AppendLine("{");
+            sb.AppendLine("  \"nodes\": [");
+
+            foreach (var node in noeuds.Values) {
+                var type = clientIds.Contains(node.Id) ? "client" : "cook";
+                var col = color.ContainsKey(node) ? $"color_{color[node]}" : "uncolored";
+
+                sb.AppendLine($"    {{ \"id\": {node.Id}, \"type\": \"{type}\", \"color\": \"{col}\" }},");
+            }
+            if (noeuds.Count > 0)
+                sb.Length -= 3;
+
+            sb.AppendLine("\n  ],");
+
+            sb.AppendLine("  \"edges\": [");
+
+            foreach (var lien in graph.liens) {
+                sb.AppendLine($"    {{ \"source\": {lien.Noeud1.Id}, \"target\": {lien.Noeud2.Id}, \"weight\": {lien.Poids} }},");
+            }
+            sb.AppendLine("\n  ],");
+
+            sb.AppendLine("  \"graph_info\": {");
+            sb.AppendLine($"    \"is_directed\": false,");
+            sb.AppendLine($"    \"chromatic_number\": {color.Values.Distinct().Count()},");
+            sb.AppendLine($"    \"node_count\": {noeuds.Count},");
+            sb.AppendLine($"    \"edge_count\": {graph.liens.Count},");
+            sb.AppendLine($"    \"planar\": {graph.EstimerGraphePlanaire(color.Values.Distinct().Count()).ToString().ToLower()},");
+            sb.AppendLine($"    \"bipartite\": {graph.EstimerGrapheBiparti(color.Values.Distinct().Count()).ToString().ToLower()},");
+            sb.AppendLine($"    \"independent set\": {graph.TrouverGroupesIndependants(color).Keys.Count()}");
+            sb.AppendLine("  }");
+
+            File.WriteAllText("../../../../graph.json", sb.ToString());
+            Shell.PrintSucces("Graph JSON written manually to graph.json");
         }
         private void InitC()
         {
