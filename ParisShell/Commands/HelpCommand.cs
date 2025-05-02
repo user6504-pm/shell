@@ -44,8 +44,8 @@ internal class HelpCommand : ICommand
             ["ALL"] = new() { "clear", "disconnect", "showtables", "showtable", "logout", "deleteacc", "edit" },
             ["ADMIN"] = new() { "user add", "user update", "user assign-role", "user list", "analytics" },
             ["BOZO"] = new() { "user add", "user update", "user assign-role", "user list", "analytics" },
-            ["CUISINIER"] = new() { "changerole", "cook clients", "cook stats", "cook dishoftheday", "cook sales", "cook dishes", "cook newdish","cook commands","cook verifycommands" },
-            ["CLIENT"] = new() { "changerole", "client neworder", "client orders", "client cancel", "client order-travel" }
+            ["CUISINIER"] = new() { "changerole", "cook clients", "cook stats", "cook dishoftheday", "cook sales", "cook dishes", "cook newdish","cook commands","cook verifycommands","cook delivery " },
+            ["CLIENT"] = new() { "changerole", "client neworder", "client orders", "client cancel", "client order-travel","client evaluate" }
         };
 
         var table = new Table()
@@ -109,6 +109,8 @@ internal class HelpCommand : ICommand
         "register" => "Register an account",
         "edit" => "Edit user profile",
         "changerole" => "Change your role with the other one available",
+        "client evaluate" => "Permits to evaluate an order made and delivered",
+        "cook delivery" => "Change the status to 'DELIVERED'",
         _ => "No description available."
     };
 }

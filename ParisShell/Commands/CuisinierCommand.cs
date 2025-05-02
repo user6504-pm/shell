@@ -409,8 +409,8 @@ namespace ParisShell.Commands
                 new SelectionPrompt<string>()
                     .Title("Select the [green]dish type[/]:")
                     .AddChoices("Aucun", "Végan", "Végétarien", "Halal", "Kasher", "Sans gluten", "Sans lactose", "Faible en glucides", "Keto", "Paléo"));
-            string ingredients = AnsiConsole.Ask<string>("Enter the [green]ingredients[/] (optional, press Enter to skip):");
-            string picture = AnsiConsole.Ask<string>("Enter the [green]photo URL[/] (optional, type Enter to skip):");
+            string ingredients = AnsiConsole.Ask<string>("Enter the [green]ingredients[/] :");
+            string picture = AnsiConsole.Ask<string>("Enter the [green]photo URL[/] :");
 
             string query = @"
             INSERT INTO plats 
