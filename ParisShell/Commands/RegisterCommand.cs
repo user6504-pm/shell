@@ -2,6 +2,10 @@
 using MySql.Data.MySqlClient;
 using ParisShell.Models;
 using ParisShell.Services;
+using MimeKit;
+using MailKit.Net.Smtp;
+using System.Net.Mail;
+using System.Net;
 
 namespace ParisShell.Commands
 {
@@ -105,6 +109,9 @@ namespace ParisShell.Commands
                 } while (pwd.Length < 6);
 
                 int metro = AnsiConsole.Ask<int>("Closest metro station ID:");
+                if (!VerifyEmailCode(email, firstname))
+                    return;
+
 
                 int userId;
                 using (var cmd = new MySqlCommand(
@@ -189,7 +196,11 @@ namespace ParisShell.Commands
                 } while (pwd.Length < 6);
 
                 int metro = AnsiConsole.Ask<int>("Closest metro station ID:");
+                if (!VerifyEmailCode(email, companyname))
+                {
 
+                    return;
+                }
                 int userId;
                 using (var cmd = new MySqlCommand(
                     "INSERT INTO users (nom, prenom, adresse, telephone, email, mdp, metroproche) VALUES (@n, @p, @a, @t, @e, @m, @mp); SELECT LAST_INSERT_ID();",
@@ -236,5 +247,71 @@ namespace ParisShell.Commands
             cmd.Parameters.AddWithValue("@type", type);
             cmd.ExecuteNonQuery();
         }
+        private bool VerifyEmailCode(string email, string name)
+        {
+            int code = new Random().Next(100000, 999999);
+            int attempts = 0;
+
+            var smtpClient = new System.Net.Mail.SmtpClient("smtp.gmail.com")
+            {
+                Port = 587,
+                Credentials = new NetworkCredential("parislivin641@gmail.com", "pndk xhjq oqhp czsw"), // Mot de passe d'application Gmail
+                EnableSsl = true,
+            };
+
+            var mail = new MailMessage
+            {
+                From = new MailAddress("parislivin641@gmail.com", "LivInParis Verification"),
+                Subject = "Your LivInParis verification code",
+                IsBodyHtml = true
+            };
+
+            mail.To.Add(email);
+
+            mail.Body = $@"
+    <html>
+    <body style='font-family:Arial,sans-serif;background-color:#f4f4f4;padding:30px;'>
+      <div style='max-width:600px;margin:auto;background:#fff;padding:20px;border-radius:8px;border:1px solid #ddd;'>
+        <h2 style='color:#5f005f;'>Welcome to LivInParis!</h2>
+        <p>Hello <strong>{name}</strong>,</p>
+        <p>Thank you for registering. Here is your verification code:</p>
+        <div style='font-size:28px;font-weight:bold;color:#333;padding:15px 0;text-align:center;background:#f0f0f0;border-radius:5px;'>{code}</div>
+        <p style='margin-top:20px;'>Please enter this code in the console to complete your registration.</p>
+        <p style='font-size:14px;color:#888;'>If you did not request this, you can safely ignore this message.</p>
+        <br/>
+        <p style='font-size:14px;color:#aaa;'>– The LivInParis Team</p>
+      </div>
+    </body>
+    </html>";
+
+            try
+            {
+                smtpClient.Send(mail);
+                AnsiConsole.MarkupLine("[green]A verification code has been sent to your email.[/]");
+            }
+            catch (Exception ex)
+            {
+                Shell.PrintError($"[red]Failed to send email: {ex.Message}[/]");
+                return false;
+            }
+
+            while (attempts < 3)
+            {
+                int userCode = AnsiConsole.Ask<int>("Enter the 6-digit code you received by email:");
+                if (userCode == code)
+                {
+                    AnsiConsole.MarkupLine("[green]Email verified successfully![/]");
+                    return true;
+                }
+
+                attempts++;
+                if (attempts < 3)
+                    AnsiConsole.MarkupLine("[red]Incorrect code. Please try again.[/]");
+            }
+
+            Shell.PrintError("Too many failed attempts. Verification failed.");
+            return false;
+        }
+
     }
 }

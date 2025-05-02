@@ -26,10 +26,10 @@ namespace ParisShell.Services {
 
             foreach (var role in baseRoles) {
                 string insertRoleQuery = @"
-        INSERT INTO roles (role_name)
-        SELECT @name
-        FROM DUAL
-        WHERE NOT EXISTS (SELECT 1 FROM roles WHERE role_name = @name);";
+                INSERT INTO roles (role_name)
+                SELECT @name
+                FROM DUAL
+                WHERE NOT EXISTS (SELECT 1 FROM roles WHERE role_name = @name);";
 
                 using var roleCmd = new MySqlCommand(insertRoleQuery, myConnection);
                 roleCmd.Parameters.AddWithValue("@name", role);

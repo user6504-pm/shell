@@ -44,7 +44,7 @@ namespace ParisShell.Commands
         {
             if (!_sqlService.IsConnected)
             {
-                Shell.PrintError("You must be logged to login.");
+                Shell.PrintError("You must be connected to login.");
                 return;
             }
 
