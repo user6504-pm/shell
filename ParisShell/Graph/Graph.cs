@@ -10,7 +10,7 @@ using System.IO;
 namespace ParisShell.Graph {
     internal class Graph<T> {
         private List<Noeud<T>> noeuds;
-        private List<Lien<T>> liens;
+        public List<Lien<T>> liens { get; }
 
         public Graph() {
             noeuds = new List<Noeud<T>>();
