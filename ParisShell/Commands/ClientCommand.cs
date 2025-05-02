@@ -52,7 +52,7 @@ namespace ParisShell.Commands
 
             if (args.Length == 0)
             {
-                Shell.PrintWarning("Usage: client neworder | orders | cancel | order-travel (id)");
+                Shell.PrintWarning("Usage: client neworder | orders | cancel | order-travel (id) | evaluate");
                 return;
             }
 
@@ -517,7 +517,6 @@ namespace ParisShell.Commands
         private void EvaluateOrder()
         {
             AnsiConsole.Clear();
-            AnsiConsole.MarkupLine("[green]Evaluate a delivered order:[/]");
 
             MySqlCommand cmd = new MySqlCommand(@"
                 SELECT c.commande_id, p.plat_name, p.type_plat, p.nationalite,
