@@ -153,8 +153,8 @@ namespace ParisShell.Commands
             ORDER BY p.plat_name;";
 
             var parameters = new Dictionary<string, object> {
-        { "@uid", _session.CurrentUser!.Id }
-    };
+                { "@uid", _session.CurrentUser!.Id }
+            };
 
             _sqlService.ExecuteAndDisplay(query, parameters);
         }
