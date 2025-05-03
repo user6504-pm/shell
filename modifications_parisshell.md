@@ -18,6 +18,15 @@ This document summarizes the updates and new features introduced after the third
 
 ## Major New Features
 
+
+### Email Confirmation System
+
+- Upon creating a new account via the `register` command, an automatic email is sent to the user.
+- The email contains a unique verification code required to confirm the registration.
+- This ensures that the email address is valid and adds a security layer to the user registration process.
+
+---
+
 ### Command Rating System
 
 - Clients can **rate individual orders** via the new command: `client assess`.
@@ -31,7 +40,6 @@ This document summarizes the updates and new features introduced after the third
 
 - `verifycommands`: Logic has been revised and corrected.
 - `cook commands`: Updated to reflect proper role logic and access controls.
-- **Enter-to-Skip:** Pressing Enter now correctly skips optional inputs or steps.
 
 ---
 
