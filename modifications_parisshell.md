@@ -8,7 +8,7 @@ This document summarizes the updates and new features introduced after the third
 
 - **Whitespace Handling:** Automatic removal of spaces in SIRET and phone number inputs.
 - **Command Restrictions:** `changerole` command is no longer available for company-type users.
-- **Login Logic:** Prevents calling `login` if a user is already authenticated.
+- **Login Logic:** Prevents calling `login` if a user is not connected to the database.
 - **Edit Behavior:** Auto-refresh after running the `edit client` command.
 - **Display Correction:** Removed duplicate `showtable` call in the client module.
 - **Order Cancellation UX:** Added a confirmation message before canceling an order via `client neworder`.
