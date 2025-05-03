@@ -18,6 +18,12 @@ This document summarizes the updates and new features introduced after the third
 
 ## Major New Features
 
+### Graph
+
+- New graph coloring methods have been developed.
+- Graph instantiation: CUISINIER and CLIENT are linked if they share a COMMANDES.
+- Graph export in JSON format.
+
 
 ### Email Confirmation System
 
