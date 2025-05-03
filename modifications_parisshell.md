@@ -4,7 +4,7 @@ This document summarizes the updates and new features introduced after the third
 
 ---
 
-## ✅ General Fixes & Improvements
+## General Fixes & Improvements
 
 - **Whitespace Handling:** Automatic removal of spaces in SIRET and phone number inputs.
 - **Command Restrictions:** `changerole` command is no longer available for company-type users.
@@ -16,9 +16,9 @@ This document summarizes the updates and new features introduced after the third
 
 ---
 
-## 🌟 Major New Features
+## Major New Features
 
-### 📝 Command Rating System
+### Command Rating System
 
 - Clients can **rate individual orders** via the new command: `client assess`.
 - Cooks can **view their ratings** using: `cook stats`.
@@ -27,7 +27,7 @@ This document summarizes the updates and new features introduced after the third
 
 ---
 
-## 🛠️ Technical Fixes
+## Technical Fixes
 
 - `verifycommands`: Logic has been revised and corrected.
 - `cook commands`: Updated to reflect proper role logic and access controls.
@@ -35,7 +35,7 @@ This document summarizes the updates and new features introduced after the third
 
 ---
 
-## 🧠 Notes
+## Notes
 
 - The rating system represents a significant extension to the platform.
 - All changes are tested and documented, and major behaviors have been reviewed.
